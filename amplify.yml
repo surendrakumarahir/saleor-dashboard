@@ -14,7 +14,7 @@ frontend:
   artifacts:
     # Vite outputs to 'dist', older webpack builds output to 'build'
     # Check your package.json build script to confirm which one
-    baseDirectory: dist
+    baseDirectory: build
     files:
       - '**/*'
 
