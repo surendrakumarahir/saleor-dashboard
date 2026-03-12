@@ -6,18 +6,24 @@ frontend:
       commands:
         - npm install -g pnpm
         - pnpm install --frozen-lockfile
-
     build:
       commands:
+        - export API_URL=http://13.235.77.187/graphql/
+        - export APP_MOUNT_URI=/dashboard/
+        - export STATIC_URL=/dashboard/
         - pnpm build
-
+        - echo "=== BUILD OUTPUT STRUCTURE ==="
+        - find . -name "index.html" -not -path "*/node_modules/*"
+        - echo "=== FOLDERS IN ROOT ==="
+        - ls -la
+        - echo "=== INSIDE BUILD FOLDER ==="
+        - ls -la build/ || echo "build/ does not exist"
+        - echo "=== INSIDE DIST FOLDER ==="
+        - ls -la dist/ || echo "dist/ does not exist"
   artifacts:
-    # Vite outputs to 'dist', older webpack builds output to 'build'
-    # Check your package.json build script to confirm which one
     baseDirectory: build
     files:
       - '**/*'
-
   cache:
     paths:
       - node_modules/**/*
