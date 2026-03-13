@@ -21,7 +21,7 @@ frontend:
         - echo "=== INSIDE DIST FOLDER ==="
         - ls -la dist/ || echo "dist/ does not exist"
   artifacts:
-    baseDirectory: build
+    baseDirectory: build/dashboard
     files:
       - '**/*'
   cache:
