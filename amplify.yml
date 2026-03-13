@@ -9,8 +9,8 @@ frontend:
     build:
       commands:
         - export API_URL=http://13.235.77.187/graphql/
-        - export APP_MOUNT_URI=/dashboard/
-        - export STATIC_URL=/dashboard/
+        - export APP_MOUNT_URI=/
+        - export STATIC_URL=/
         - pnpm build
         - echo "=== BUILD OUTPUT STRUCTURE ==="
         - find . -name "index.html" -not -path "*/node_modules/*"
