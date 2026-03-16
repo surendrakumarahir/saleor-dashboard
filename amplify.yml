@@ -4,6 +4,9 @@ frontend:
   phases:
     preBuild:
       commands:
+        - export API_URL=https://easypick.mooo.com/graphql/
+        - export APP_MOUNT_URI=/
+        - export STATIC_URL=/
         - npm install -g pnpm
         - pnpm install --frozen-lockfile
     build:
@@ -12,18 +15,12 @@ frontend:
         - export APP_MOUNT_URI=/
         - export STATIC_URL=/
         - pnpm build
-        - echo "=== BUILD OUTPUT STRUCTURE ==="
-        - find . -name "index.html" -not -path "*/node_modules/*"
-        - echo "=== FOLDERS IN ROOT ==="
-        - ls -la
-        - echo "=== INSIDE BUILD FOLDER ==="
-        - ls -la build/ || echo "build/ does not exist"
-        - echo "=== INSIDE DIST FOLDER ==="
-        - ls -la dist/ || echo "dist/ does not exist"
+        - echo "=== INDEX HTML ==="
+        - cat build/dashboard/index.html
   artifacts:
     baseDirectory: build/dashboard
     files:
-      - '**/*'
+      - "**/*"
   cache:
     paths:
       - node_modules/**/*
