@@ -15,12 +15,22 @@ frontend:
         - export APP_MOUNT_URI=/
         - export STATIC_URL=/
         - pnpm build
-        - echo "=== INDEX HTML ==="
-        - cat build/dashboard/index.html
+
   artifacts:
     baseDirectory: build/dashboard
     files:
       - "**/*"
+
   cache:
     paths:
       - node_modules/**/*
+
+customHeaders:
+  - pattern: "*.js"
+    headers:
+      - key: "Content-Type"
+        value: "application/javascript"
+  - pattern: "*.css"
+    headers:
+      - key: "Content-Type"
+        value: "text/css"
