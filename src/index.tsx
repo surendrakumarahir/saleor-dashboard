@@ -27,6 +27,7 @@ import AuthProvider from "./auth/AuthProvider";
 import LoginLoading from "./auth/components/LoginLoading/LoginLoading";
 import SectionRoute from "./auth/components/SectionRoute";
 import { useAuthRedirection } from "./auth/hooks/useAuthRedirection";
+import { ImageCollectionsList } from "./banners/pages/ImageCollectionsList";
 import { channelsSection } from "./channels/urls";
 import AppLayout from "./components/AppLayout";
 import useAppChannel, { AppChannelProvider } from "./components/AppLayout/AppChannelContext";
@@ -192,6 +193,8 @@ const Routes = () => {
                 <Switch>
                   {legacyRedirects}
                   <SectionRoute exact path="/" component={WelcomePage} />
+                  {/* Banner Management Route */}
+                  <SectionRoute permissions={[]} path="/banners" component={ImageCollectionsList} />
                   <SectionRoute
                     permissions={[
                       PermissionEnum.MANAGE_PRODUCTS,
