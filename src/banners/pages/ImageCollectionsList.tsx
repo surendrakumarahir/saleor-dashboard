@@ -305,6 +305,7 @@ const BannerManagementModal: React.FC<BannerManagementModalProps> = ({
         }}
         banner={selectedBanner}
         collectionId={collection.id}
+        collectionName={collection.name}
         defaultPosition={banners.length + 1}
       />
     </>

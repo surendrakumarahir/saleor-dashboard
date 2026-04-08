@@ -47,6 +47,16 @@ export interface BannerError {
   field?: string;
 }
 
+export interface UploadedBannerFile {
+  url: string;
+  contentType?: string | null;
+}
+
+export interface UploadedBannerImage {
+  fileKey: string;
+  uploadedFile?: UploadedBannerFile | null;
+}
+
 export interface CreateImageCollectionInput {
   name: string;
   description?: string;
@@ -64,7 +74,7 @@ export interface UpdateImageCollectionInput {
 export interface CreateBannerInput {
   title: string;
   description?: string;
-  image: string;
+  imageKey: string;
   altText?: string;
   linkUrl?: string;
   linkText?: string;
@@ -81,6 +91,7 @@ export interface CreateBannerInput {
 export interface UpdateBannerInput {
   id: string;
   title?: string;
+  imageKey?: string;
   description?: string;
   altText?: string;
   linkUrl?: string;
@@ -148,6 +159,21 @@ export interface DeleteBannerResponse {
   };
 }
 
+export interface UploadBannerImageResponse {
+  uploadBannerImage: {
+    fileKey?: string | null;
+    uploadedFile?: UploadedBannerFile | null;
+    errors: BannerError[];
+  };
+}
+
+export interface DeleteBannerImageResponse {
+  deleteBannerImage: {
+    success: boolean;
+    errors: BannerError[];
+  };
+}
+
 export interface GetChannelsResponse {
   channels: Channel[];
 }
@@ -165,8 +191,9 @@ export interface BannerFormData {
   isActive: boolean;
   startDate: string;
   endDate: string;
-  image?: File | null;
   imageUrl?: string;
+  imageKey?: string;
+  uploadFolder: string;
 }
 
 export interface CollectionFormData {

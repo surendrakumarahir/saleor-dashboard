@@ -152,13 +152,13 @@ export const DELETE_IMAGE_COLLECTION = gql`
 `;
 export const CREATE_BANNER = gql`
   mutation CreateBanner(
+    $collectionId: ID!
     $title: String!
+    $imageKey: String!
     $description: String
-    $image: String!
     $altText: String
     $linkUrl: String
     $linkText: String
-    $collectionId: ID!
     $customField1: String
     $customField2: String
     $customField3: String
@@ -168,13 +168,13 @@ export const CREATE_BANNER = gql`
     $endDate: DateTime
   ) {
     createBanner(
+      collectionId: $collectionId
       title: $title
+      imageKey: $imageKey
       description: $description
-      image: $image
       altText: $altText
       linkUrl: $linkUrl
       linkText: $linkText
-      collectionId: $collectionId
       customField1: $customField1
       customField2: $customField2
       customField3: $customField3
@@ -199,6 +199,7 @@ export const UPDATE_BANNER = gql`
   mutation UpdateBanner(
     $id: ID!
     $title: String
+    $imageKey: String
     $description: String
     $altText: String
     $linkUrl: String
@@ -214,6 +215,7 @@ export const UPDATE_BANNER = gql`
     updateBanner(
       id: $id
       title: $title
+      imageKey: $imageKey
       description: $description
       altText: $altText
       linkUrl: $linkUrl
@@ -237,6 +239,36 @@ export const UPDATE_BANNER = gql`
     }
   }
   ${BANNER_FRAGMENT}
+`;
+
+export const UPLOAD_BANNER_IMAGE = gql`
+  mutation UploadBannerImage($file: Upload!, $folder: String) {
+    uploadBannerImage(file: $file, folder: $folder) {
+      fileKey
+      uploadedFile {
+        url
+        contentType
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const DELETE_BANNER_IMAGE = gql`
+  mutation DeleteBannerImage($fileKey: String!, $force: Boolean) {
+    deleteBannerImage(fileKey: $fileKey, force: $force) {
+      success
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
 `;
 
 export const DELETE_BANNER = gql`

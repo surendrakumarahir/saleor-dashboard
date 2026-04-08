@@ -5,19 +5,22 @@ import {
   type ConfirmButtonTransitionState,
 } from "@dashboard/components/ConfirmButton";
 import { DashboardModal } from "@dashboard/components/Modal";
+import { SaleorThrobber } from "@dashboard/components/Throbber";
 import { TextField } from "@material-ui/core";
 import { makeStyles } from "@saleor/macaw-ui";
 import { Box, Button, Checkbox, Divider, Text, vars } from "@saleor/macaw-ui-next";
-import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import slugify from "slugify";
 
-import { CREATE_BANNER, UPDATE_BANNER } from "../queries";
+import { CREATE_BANNER, DELETE_BANNER_IMAGE, UPDATE_BANNER, UPLOAD_BANNER_IMAGE } from "../queries";
 import {
   type Banner,
   type BannerError,
   type BannerFormData,
   type CreateBannerResponse,
+  type DeleteBannerImageResponse,
   type UpdateBannerResponse,
+  type UploadBannerImageResponse,
 } from "../types";
 
 interface BannerModalProps {
@@ -26,6 +29,7 @@ interface BannerModalProps {
   onSave: (banner: Banner) => void;
   banner?: Banner;
   collectionId: string;
+  collectionName?: string;
   defaultPosition?: number;
 }
 
@@ -69,6 +73,9 @@ const useStyles = makeStyles(
       gap: theme.spacing(2),
       gridTemplateColumns: "88px 1fr",
       padding: theme.spacing(2),
+      [theme.breakpoints.down("sm")]: {
+        gridTemplateColumns: "1fr",
+      },
     },
     image: {
       borderRadius: theme.spacing(),
@@ -91,35 +98,79 @@ const useStyles = makeStyles(
       display: "grid",
       gap: theme.spacing(0.5),
     },
+    folderButtons: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: theme.spacing(1),
+    },
+    imageStatusRow: {
+      alignItems: "center",
+      display: "flex",
+      gap: theme.spacing(1),
+    },
   }),
   { name: "BannerModal" },
 );
 
-const INITIAL_FORM_DATA: BannerFormData = {
-  title: "",
-  description: "",
-  altText: "",
-  linkUrl: "",
-  linkText: "",
-  customField1: "",
-  customField2: "",
-  customField3: "",
-  position: 0,
-  isActive: true,
-  startDate: "",
-  endDate: "",
-  image: null,
-  imageUrl: "",
+const getDefaultUploadFolder = (collectionName?: string) => {
+  const normalizedCollectionName = collectionName
+    ? slugify(collectionName, {
+        lower: true,
+        strict: true,
+        trim: true,
+      })
+    : "";
+
+  if (!normalizedCollectionName) {
+    return "banners";
+  }
+
+  return `banners/${normalizedCollectionName}`;
 };
 
-const customFields: Array<{
-  field: "customField1" | "customField2" | "customField3";
-  label: string;
-}> = [
-  { field: "customField1", label: "Custom field 1" },
-  { field: "customField2", label: "Custom field 2" },
-  { field: "customField3", label: "Custom field 3" },
-];
+const createInitialFormData = (
+  banner: Banner | undefined,
+  defaultPosition: number,
+  collectionName?: string,
+): BannerFormData => {
+  if (banner) {
+    return {
+      title: banner.title,
+      description: banner.description || "",
+      altText: banner.altText || "",
+      linkUrl: banner.linkUrl || "",
+      linkText: banner.linkText || "",
+      customField1: banner.customField1 || "",
+      customField2: banner.customField2 || "",
+      customField3: banner.customField3 || "",
+      position: banner.position,
+      isActive: banner.isActive,
+      startDate: banner.startDate || "",
+      endDate: banner.endDate || "",
+      imageUrl: banner.image || "",
+      imageKey: "",
+      uploadFolder: getDefaultUploadFolder(collectionName),
+    };
+  }
+
+  return {
+    title: "",
+    description: "",
+    altText: "",
+    linkUrl: "",
+    linkText: "",
+    customField1: "",
+    customField2: "",
+    customField3: "",
+    position: defaultPosition,
+    isActive: true,
+    startDate: "",
+    endDate: "",
+    imageUrl: "",
+    imageKey: "",
+    uploadFolder: getDefaultUploadFolder(collectionName),
+  };
+};
 
 const formatDateTimeLocal = (value: string) => {
   if (!value) {
@@ -139,73 +190,187 @@ const formatDateTimeLocal = (value: string) => {
 
 const parseDateTimeLocal = (value: string) => (value ? new Date(value).toISOString() : "");
 
-export const BannerModal: React.FC<BannerModalProps> = ({
+const getBannerErrorMessage = (error: BannerError) => {
+  switch (error.code) {
+    case "IMAGE_UPLOAD_ERROR":
+      return error.message || "Image upload failed. Try again.";
+    case "IMAGE_IN_USE":
+      return error.message || "This image is already used by a banner.";
+    case "IMAGE_NOT_FOUND":
+      return error.message || "The selected image could not be found.";
+    default:
+      return error.message || "Something went wrong. Try again.";
+  }
+};
+
+export const BannerModal = ({
   isOpen,
   onClose,
   onSave,
   banner,
   collectionId,
+  collectionName,
   defaultPosition = 0,
-}) => {
+}: BannerModalProps) => {
   const classes = useStyles({});
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [formData, setFormData] = useState<BannerFormData>(INITIAL_FORM_DATA);
+  const uploadedImageSavedRef = useRef(false);
+
+  const [formData, setFormData] = useState<BannerFormData>(
+    createInitialFormData(banner, defaultPosition, collectionName),
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeletingImage, setIsDeletingImage] = useState(false);
 
   const [createBanner] = useMutation<CreateBannerResponse>(CREATE_BANNER);
   const [updateBanner] = useMutation<UpdateBannerResponse>(UPDATE_BANNER);
+  const [uploadBannerImage] = useMutation<UploadBannerImageResponse>(UPLOAD_BANNER_IMAGE);
+  const [deleteBannerImage] = useMutation<DeleteBannerImageResponse>(DELETE_BANNER_IMAGE);
 
   useEffect(() => {
-    if (banner) {
-      setFormData({
-        title: banner.title,
-        description: banner.description || "",
-        altText: banner.altText || "",
-        linkUrl: banner.linkUrl || "",
-        linkText: banner.linkText || "",
-        customField1: banner.customField1 || "",
-        customField2: banner.customField2 || "",
-        customField3: banner.customField3 || "",
-        position: banner.position,
-        isActive: banner.isActive,
-        startDate: banner.startDate || "",
-        endDate: banner.endDate || "",
-        imageUrl: banner.image || "",
-        image: null,
-      });
-    } else {
-      setFormData({ ...INITIAL_FORM_DATA, position: defaultPosition });
+    if (!isOpen) {
+      return;
     }
 
+    uploadedImageSavedRef.current = false;
+    setFormData(createInitialFormData(banner, defaultPosition, collectionName));
     setErrors({});
-  }, [banner, isOpen, defaultPosition]);
+  }, [banner, collectionName, defaultPosition, isOpen]);
 
-  const previewUrl = useMemo(() => {
-    if (formData.image) {
-      return URL.createObjectURL(formData.image);
+  const folderOptions = useMemo(() => {
+    return Array.from(new Set(["banners", getDefaultUploadFolder(collectionName)])).filter(Boolean);
+  }, [collectionName]);
+
+  const isBusy = isSaving || isUploading || isDeletingImage;
+  const previewUrl = formData.imageUrl;
+  const hasExistingBannerImage = Boolean(banner?.image);
+
+  const setFormError = (field: string, message: string) => {
+    setErrors(prev => ({
+      ...prev,
+      [field]: message,
+    }));
+  };
+
+  const clearFormError = (field: string) => {
+    setErrors(prev => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+
+      delete nextErrors[field];
+
+      return nextErrors;
+    });
+  };
+
+  const clearImageState = () => {
+    setFormData(prev => ({
+      ...prev,
+      imageKey: "",
+      imageUrl: "",
+    }));
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const applyApiErrors = (apiErrors: BannerError[], fallbackField: string = "general") => {
+    const nextErrors = apiErrors.reduce<Record<string, string>>((acc, error) => {
+      const field = error.field || fallbackField;
+
+      acc[field] = getBannerErrorMessage(error);
+
+      return acc;
+    }, {});
+
+    setErrors(prev => ({
+      ...prev,
+      ...nextErrors,
+    }));
+  };
+
+  const requestDeleteUploadedImage = async (
+    fileKey: string,
+    force = false,
+    silent = false,
+  ): Promise<"deleted" | "inUse" | "failed"> => {
+    try {
+      const response = await deleteBannerImage({
+        variables: {
+          fileKey,
+          force,
+        },
+      });
+
+      const mutationResult = response.data?.deleteBannerImage;
+
+      if (mutationResult?.success) {
+        return "deleted";
+      }
+
+      if (!mutationResult?.errors?.length) {
+        if (!silent) {
+          setFormError("image", "Unable to delete the uploaded image.");
+        }
+
+        return "failed";
+      }
+
+      const imageInUseError = mutationResult.errors.find(error => error.code === "IMAGE_IN_USE");
+
+      if (imageInUseError && !force) {
+        return "inUse";
+      }
+
+      if (!silent) {
+        applyApiErrors(mutationResult.errors, "image");
+      }
+
+      return "failed";
+    } catch (error) {
+      if (!silent) {
+        setFormError(
+          "image",
+          error instanceof Error ? error.message : "Unable to delete the uploaded image.",
+        );
+      }
+
+      return "failed";
+    }
+  };
+
+  const cleanupPendingUpload = async () => {
+    if (!formData.imageKey || uploadedImageSavedRef.current) {
+      return;
     }
 
-    return formData.imageUrl || "";
-  }, [formData.image, formData.imageUrl]);
+    await requestDeleteUploadedImage(formData.imageKey, true, true);
+  };
 
-  useEffect(() => {
-    return () => {
-      if (formData.image && previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [formData.image, previewUrl]);
+  const handleModalClose = () => {
+    void cleanupPendingUpload();
+    onClose();
+  };
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+  const validateForm = () => {
+    const nextErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "Title is required";
+      nextErrors.title = "Title is required";
     }
 
-    if (!formData.imageUrl && !formData.image) {
-      newErrors.image = "Image is required";
+    if (!formData.imageUrl) {
+      nextErrors.image = "Upload an image before saving.";
+    }
+
+    if (!banner && !formData.imageKey) {
+      nextErrors.image = "Upload an image before creating the banner.";
     }
 
     if (formData.startDate && formData.endDate) {
@@ -213,89 +378,143 @@ export const BannerModal: React.FC<BannerModalProps> = ({
       const end = new Date(formData.endDate);
 
       if (start >= end) {
-        newErrors.startDate = "Start date must be before end date";
+        nextErrors.startDate = "Start date must be before end date.";
       }
     }
 
-    setErrors(newErrors);
+    setErrors(nextErrors);
 
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const handleInputChange = (
-    field: keyof BannerFormData,
-    value: BannerFormData[keyof BannerFormData],
+  const handleInputChange = <T extends keyof BannerFormData>(
+    field: T,
+    value: BannerFormData[T],
   ) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
 
-    if (errors[field]) {
-      setErrors(prev => {
-        const nextErrors = { ...prev };
+    clearFormError(field);
+  };
 
-        delete nextErrors[field];
+  const handleImageUpload = async (file: File) => {
+    clearFormError("image");
+    clearFormError("uploadFolder");
 
-        return nextErrors;
+    const previousUnsavedFileKey = uploadedImageSavedRef.current ? "" : formData.imageKey || "";
+
+    if (previousUnsavedFileKey) {
+      await requestDeleteUploadedImage(previousUnsavedFileKey, true, true);
+    }
+
+    setIsUploading(true);
+
+    try {
+      const response = await uploadBannerImage({
+        variables: {
+          file,
+          folder: formData.uploadFolder.trim() || undefined,
+        },
       });
+
+      const mutationResult = response.data?.uploadBannerImage;
+
+      if (mutationResult?.errors?.length) {
+        clearImageState();
+        applyApiErrors(mutationResult.errors, "image");
+
+        return;
+      }
+
+      if (!mutationResult?.fileKey || !mutationResult.uploadedFile?.url) {
+        clearImageState();
+        setFormError("image", "Image upload did not return a file key.");
+
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        imageKey: mutationResult.fileKey || "",
+        imageUrl: mutationResult.uploadedFile?.url || "",
+      }));
+    } catch (error) {
+      clearImageState();
+      setFormError(
+        "image",
+        error instanceof Error ? error.message : "Image upload failed. Try again.",
+      );
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) {
       return;
     }
 
-    setFormData(prev => ({
-      ...prev,
-      image: file,
-      imageUrl: "",
-    }));
-
-    setErrors(prev => {
-      const nextErrors = { ...prev };
-
-      delete nextErrors.image;
-
-      return nextErrors;
-    });
+    await handleImageUpload(file);
   };
 
-  const handleMutationErrors = (mutationErrors: BannerError[]) => {
-    const fieldErrors = mutationErrors.reduce<Record<string, string>>((acc, error) => {
-      if (error.field) {
-        acc[error.field] = error.message;
-      } else {
-        acc.general = error.message;
-      }
+  const handleRemoveImage = async () => {
+    clearFormError("image");
 
-      return acc;
-    }, {});
+    if (!formData.imageKey) {
+      clearImageState();
 
-    setErrors(fieldErrors);
-  };
-
-  const handleSubmit = async (event?: React.FormEvent) => {
-    event?.preventDefault();
-
-    if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
+    setIsDeletingImage(true);
 
     try {
-      const input = {
+      const result = await requestDeleteUploadedImage(formData.imageKey);
+
+      if (result === "inUse") {
+        const shouldForceDelete = window.confirm(
+          "This image is already used by a banner. Delete it everywhere and remove it here?",
+        );
+
+        if (!shouldForceDelete) {
+          return;
+        }
+
+        const forcedResult = await requestDeleteUploadedImage(formData.imageKey, true);
+
+        if (forcedResult !== "deleted") {
+          return;
+        }
+      } else if (result !== "deleted") {
+        return;
+      }
+
+      clearImageState();
+    } finally {
+      setIsDeletingImage(false);
+    }
+  };
+
+  const handleSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
+
+    if (isBusy || !validateForm()) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const sharedInput = {
         title: formData.title,
         description: formData.description,
-        image: formData.imageUrl || formData.image?.name || "",
         altText: formData.altText,
         linkUrl: formData.linkUrl,
         linkText: formData.linkText,
-        collectionId,
         customField1: formData.customField1,
         customField2: formData.customField2,
         customField3: formData.customField3,
@@ -307,10 +526,15 @@ export const BannerModal: React.FC<BannerModalProps> = ({
 
       if (banner) {
         const response = await updateBanner({
-          variables: { id: banner.id, ...input },
+          variables: {
+            id: banner.id,
+            ...sharedInput,
+            imageKey: formData.imageKey || undefined,
+          },
         });
 
         if (response.data?.updateBanner?.banner) {
+          uploadedImageSavedRef.current = true;
           onSave(response.data.updateBanner.banner);
           onClose();
 
@@ -318,14 +542,19 @@ export const BannerModal: React.FC<BannerModalProps> = ({
         }
 
         if (response.data?.updateBanner?.errors?.length) {
-          handleMutationErrors(response.data.updateBanner.errors);
+          applyApiErrors(response.data.updateBanner.errors);
         }
       } else {
         const response = await createBanner({
-          variables: input,
+          variables: {
+            collectionId,
+            ...sharedInput,
+            imageKey: formData.imageKey,
+          },
         });
 
         if (response.data?.createBanner?.banner) {
+          uploadedImageSavedRef.current = true;
           onSave(response.data.createBanner.banner);
           onClose();
 
@@ -333,22 +562,24 @@ export const BannerModal: React.FC<BannerModalProps> = ({
         }
 
         if (response.data?.createBanner?.errors?.length) {
-          handleMutationErrors(response.data.createBanner.errors);
+          applyApiErrors(response.data.createBanner.errors);
         }
       }
+    } catch (error) {
+      setFormError("general", error instanceof Error ? error.message : "Unable to save banner.");
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const confirmButtonState: ConfirmButtonTransitionState = loading ? "loading" : "default";
+  const confirmButtonState: ConfirmButtonTransitionState = isSaving ? "loading" : "default";
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <DashboardModal open={isOpen} onChange={onClose}>
+    <DashboardModal open={isOpen} onChange={handleModalClose}>
       <DashboardModal.Content size="md" __gridTemplateRows="auto 1fr auto">
         <DashboardModal.Header>
           <Text as="span" size={5} fontWeight="bold">
@@ -394,6 +625,30 @@ export const BannerModal: React.FC<BannerModalProps> = ({
               <Text size={2} fontWeight="medium">
                 Image
               </Text>
+              <TextField
+                label="Upload folder"
+                value={formData.uploadFolder}
+                onChange={event => handleInputChange("uploadFolder", event.target.value)}
+                error={!!errors.uploadFolder}
+                helperText={
+                  errors.uploadFolder || "Choose where uploaded banner files should live."
+                }
+                fullWidth
+              />
+              <Box className={classes.folderButtons}>
+                {folderOptions.map(folder => (
+                  <Button
+                    key={folder}
+                    type="button"
+                    size="small"
+                    variant={formData.uploadFolder === folder ? "secondary" : "tertiary"}
+                    onClick={() => handleInputChange("uploadFolder", folder)}
+                  >
+                    {folder}
+                  </Button>
+                ))}
+              </Box>
+
               {previewUrl && (
                 <Box className={classes.imagePreview}>
                   <img
@@ -403,20 +658,31 @@ export const BannerModal: React.FC<BannerModalProps> = ({
                   />
                   <Box className={classes.imageActions}>
                     <Text size={2} fontWeight="medium">
-                      {formData.image?.name || "Current image"}
+                      {formData.imageKey
+                        ? "Uploaded image ready to save"
+                        : hasExistingBannerImage
+                          ? "Current banner image"
+                          : "Selected image"}
                     </Text>
-                    <Box display="flex" gap={2}>
+                    {formData.imageKey && (
+                      <Text size={2} className={classes.helperText}>
+                        File key: {formData.imageKey}
+                      </Text>
+                    )}
+                    <Box display="flex" gap={2} flexWrap="wrap">
                       <Button
                         type="button"
                         variant="secondary"
                         onClick={() => fileInputRef.current?.click()}
+                        disabled={isBusy}
                       >
                         Replace
                       </Button>
                       <Button
                         type="button"
                         variant="tertiary"
-                        onClick={() => handleInputChange("imageUrl", "")}
+                        onClick={handleRemoveImage}
+                        disabled={isBusy}
                       >
                         Remove
                       </Button>
@@ -424,24 +690,42 @@ export const BannerModal: React.FC<BannerModalProps> = ({
                   </Box>
                 </Box>
               )}
+
               {!previewUrl && (
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={isBusy}
                 >
                   Upload image
                 </Button>
               )}
+
               <input
                 ref={fileInputRef}
                 className={classes.hiddenInput}
                 type="file"
                 accept="image/*"
-                onChange={handleImageChange}
+                onChange={event => {
+                  void handleImageChange(event);
+                }}
               />
+
+              {(isUploading || isDeletingImage) && (
+                <Box className={classes.imageStatusRow}>
+                  <SaleorThrobber size={16} />
+                  <Text size={2} className={classes.helperText}>
+                    {isUploading
+                      ? `Uploading to ${formData.uploadFolder || "banners"}...`
+                      : "Removing uploaded image..."}
+                  </Text>
+                </Box>
+              )}
+
               <Text className={errors.image ? classes.errorText : classes.helperText} size={2}>
-                {errors.image || "Use an image file for the banner preview."}
+                {errors.image ||
+                  "Images upload immediately and the returned file key is used when the banner is saved."}
               </Text>
             </Box>
             <TextField
@@ -484,7 +768,13 @@ export const BannerModal: React.FC<BannerModalProps> = ({
               Custom Fields
             </Text>
             <Box className={classes.threeColumns}>
-              {customFields.map(({ field, label }) => (
+              {(
+                [
+                  { field: "customField1", label: "Custom field 1" },
+                  { field: "customField2", label: "Custom field 2" },
+                  { field: "customField3", label: "Custom field 3" },
+                ] as const
+              ).map(({ field, label }) => (
                 <TextField
                   key={field}
                   label={label}
@@ -553,12 +843,13 @@ export const BannerModal: React.FC<BannerModalProps> = ({
         </Box>
 
         <DashboardModal.Actions>
-          <BackButton onClick={onClose} />
+          <BackButton onClick={handleModalClose} disabled={isBusy} />
           <ConfirmButton
             type="submit"
             transitionState={confirmButtonState}
             onClick={handleSubmit}
             data-test-id="banner-save-button"
+            disabled={isUploading || isDeletingImage}
           >
             {banner ? "Update Banner" : "Create Banner"}
           </ConfirmButton>
