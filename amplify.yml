@@ -4,14 +4,14 @@ frontend:
   phases:
     preBuild:
       commands:
-        - export API_URL=https://easypick.mooo.com/graphql/
+        - export API_URL=https://api.easytopick.in/graphql/
         - export APP_MOUNT_URI=/
         - export STATIC_URL=/
         - npm install -g pnpm
         - pnpm install --frozen-lockfile
     build:
       commands:
-        - export API_URL=https://easypick.mooo.com/graphql/
+        - export API_URL=https://api.easytopick/graphql/
         - export APP_MOUNT_URI=/
         - export STATIC_URL=/
         - pnpm build
