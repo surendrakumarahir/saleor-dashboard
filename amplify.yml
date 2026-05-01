@@ -11,7 +11,7 @@ frontend:
         - pnpm install --frozen-lockfile
     build:
       commands:
-        - export API_URL=https://api.easytopick/graphql/
+        - export API_URL=https://api.easytopick.in/graphql/
         - export APP_MOUNT_URI=/
         - export STATIC_URL=/
         - pnpm build
