@@ -1,4 +1,5 @@
 import { useUser } from "@dashboard/auth/useUser";
+import { bannerListPath } from "@dashboard/banners/urls";
 import { categoryListUrl } from "@dashboard/categories/urls";
 import { collectionListUrl } from "@dashboard/collections/urls";
 import { iconSize } from "@dashboard/components/icons";
@@ -264,6 +265,23 @@ export function useMenuStructure() {
       id: "modeling",
       url: pageListPath,
       endAdornment: <Ripple model={ripplePagesAreModels} />,
+      type: "itemGroup",
+    },
+    {
+      children: [
+        {
+          label: "Image Collections",
+          id: "image-collections",
+          url: bannerListPath,
+          permissions: [],
+          type: "item",
+        },
+      ],
+      icon: renderIcon(<ModelingIcon />),
+      label: "CMS",
+      permissions: [],
+      id: "cms",
+      url: bannerListPath,
       type: "itemGroup",
     },
     {

@@ -1,0 +1,36 @@
+version: 1
+
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - export API_URL=https://api.easytopick.in/graphql/
+        - export APP_MOUNT_URI=/
+        - export STATIC_URL=/
+        - npm install -g pnpm
+        - pnpm install --frozen-lockfile
+    build:
+      commands:
+        - export API_URL=https://api.easytopick.in/graphql/
+        - export APP_MOUNT_URI=/
+        - export STATIC_URL=/
+        - pnpm build
+
+  artifacts:
+    baseDirectory: build/dashboard
+    files:
+      - "**/*"
+
+  cache:
+    paths:
+      - node_modules/**/*
+
+customHeaders:
+  - pattern: "*.js"
+    headers:
+      - key: "Content-Type"
+        value: "application/javascript"
+  - pattern: "*.css"
+    headers:
+      - key: "Content-Type"
+        value: "text/css"

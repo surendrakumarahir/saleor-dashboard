@@ -1,4 +1,4 @@
-import { CodegenConfig } from "@graphql-codegen/cli";
+import { type CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
   schema: "./schema-main.graphql",
@@ -12,6 +12,9 @@ const config: CodegenConfig = {
     "!./src/**/mutations.staging.ts",
     "!./src/**/fragments/*.staging.ts",
     "!./src/searches/*.staging.ts",
+    // banners module uses custom types not in main schema
+    "!./src/banners/queries.ts",
+    "!./src/banners/**/*.ts",
   ],
   generates: {
     "./src/graphql/fragmentTypes.generated.ts": {
