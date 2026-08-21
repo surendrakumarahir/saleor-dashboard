@@ -53,6 +53,8 @@
     "test:debug": "DEBUG_PRINT_LIMIT=20000 jest",
     "test:quiet": "jest --silent",
     "test:watch": "jest --watch",
+    "telegram:notify": "python scripts/telegram_order_notifier.py",
+    "telegram:test": "python scripts/telegram_order_notifier.py --test",
     "update-payment-assets": "node scripts/update-payment-assets.cjs"
   },
   "config": {
