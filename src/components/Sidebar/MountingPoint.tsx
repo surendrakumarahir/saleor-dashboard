@@ -30,7 +30,7 @@ export const MountingPoint = () => {
     >
       <Avatar.Store src={logo} scheme="accent1" size="small" />
       <Text size={3} fontWeight="bold" __flex="1">
-        Saleor Dashboard
+        EasyToPick Dashboard
       </Text>
       {isAuthenticatedViaCloud && (
         <>

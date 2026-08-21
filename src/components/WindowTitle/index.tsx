@@ -6,7 +6,8 @@ interface WindowTitleProps {
 }
 
 export const WindowTitle = ({ title }: WindowTitleProps) => {
-  const shop = useShop();
+  // const shop = useShop();
+  const shopName = "EasyToPick Dashboard";
 
-  return shop === undefined || !title ? null : <Helmet title={`${title} | ${shop.name}`} />;
-};
+  return !title ? null : <Helmet title={`${title} | ${shopName}`} />;
+};    
