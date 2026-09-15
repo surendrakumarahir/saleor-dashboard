@@ -92,6 +92,7 @@ interface OrderDetailsPageProps {
   onInvoiceClick: (invoiceId: string) => any;
   onInvoiceGenerate: () => any;
   onInvoiceSend: (invoiceId: string) => any;
+  onInvoicePrint?: () => any;
   onTransactionAction: (transactionId: string, actionType: TransactionActionEnum) => any;
   onAddManualTransaction: () => any;
   onRefundAdd: () => void;
@@ -122,6 +123,7 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
     onInvoiceClick,
     onInvoiceGenerate,
     onInvoiceSend,
+    onInvoicePrint,
     onOrderReturn,
     onOrderLineAdd,
     onOrderLineChange,
@@ -360,6 +362,7 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
                     onInvoiceClick={onInvoiceClick}
                     onInvoiceGenerate={onInvoiceGenerate}
                     onInvoiceSend={onInvoiceSend}
+                    onInvoicePrint={onInvoicePrint}
                   />
                   <CardSpacer />
                   <Divider />
