@@ -47,6 +47,7 @@ import {
 import { productUrl } from "../../../../products/urls";
 import OrderAddressFields from "../../../components/OrderAddressFields/OrderAddressFields";
 import OrderCancelDialog from "../../../components/OrderCancelDialog";
+import { EasyToPickInvoiceModal } from "../../../components/EasyToPickInvoice/EasyToPickInvoiceModal";
 import { OrderCaptureDialog } from "../../../components/OrderCaptureDialog/OrderCaptureDialog";
 import OrderDetailsPage from "../../../components/OrderDetailsPage/OrderDetailsPage";
 import OrderFulfillmentCancelDialog from "../../../components/OrderFulfillmentCancelDialog";
@@ -158,6 +159,12 @@ export const OrderUnconfirmedDetails = ({
       id: order?.user?.id,
     },
     skip: !order?.user?.id || !isAnyAddressEditModalOpen(params.action),
+  });
+  const [invoiceModalState, setInvoiceModalState] = useState<{
+    open: boolean;
+    invoiceId?: string;
+  }>({
+    open: false,
   });
   const handleCustomerChangeAddresses = async (
     data: Partial<OrderCustomerAddressesEditDialogOutput>,
@@ -295,15 +302,22 @@ export const OrderUnconfirmedDetails = ({
             onProfileView={() => navigate(customerUrl(order.user.id))}
             onAddManualTransaction={() => openModal("add-manual-transaction")}
             onInvoiceClick={id =>
-              window.open(
-                order.invoices.find(invoice => invoice.id === id)?.url,
-                "_blank",
-                "rel=noopener",
-              )
+              setInvoiceModalState({
+                open: true,
+                invoiceId: id,
+              })
             }
-            onInvoiceGenerate={() =>
+            onInvoiceGenerate={() => {
               orderInvoiceRequest.mutate({
                 orderId: id,
+              });
+              setInvoiceModalState({
+                open: true,
+              });
+            }}
+            onInvoicePrint={() =>
+              setInvoiceModalState({
+                open: true,
               })
             }
             onInvoiceSend={id => openModal("invoice-send", { id })}
@@ -547,6 +561,13 @@ export const OrderUnconfirmedDetails = ({
         onClose={closeModal}
         onStandardRefund={() => navigate(orderTransactionRefundUrl(id), { replace: true })}
         onManualRefund={() => navigate(orderManualTransactionRefundUrl(id), { replace: true })}
+      />
+
+      <EasyToPickInvoiceModal
+        open={invoiceModalState.open}
+        onClose={() => setInvoiceModalState({ open: false })}
+        order={order}
+        selectedInvoiceId={invoiceModalState.invoiceId}
       />
     </>
   );
