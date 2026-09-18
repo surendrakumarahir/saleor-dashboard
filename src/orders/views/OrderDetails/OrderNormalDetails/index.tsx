@@ -52,6 +52,7 @@ import { useIntl } from "react-intl";
 
 import { customerUrl } from "../../../../customers/urls";
 import { productUrl } from "../../../../products/urls";
+import { EasyToPickInvoiceModal } from "../../../components/EasyToPickInvoice/EasyToPickInvoiceModal";
 import OrderAddressFields from "../../../components/OrderAddressFields/OrderAddressFields";
 import OrderCancelDialog from "../../../components/OrderCancelDialog";
 import { OrderCaptureDialog } from "../../../components/OrderCaptureDialog/OrderCaptureDialog";
@@ -162,6 +163,12 @@ export const OrderNormalDetails = ({
       input: data,
     });
   const intl = useIntl();
+  const [invoiceModalState, setInvoiceModalState] = useState<{
+    open: boolean;
+    invoiceId?: string;
+  }>({
+    open: false,
+  });
   const [transactionReference, setTransactionReference] = useState("");
   const [currentApproval, setCurrentApproval] = useState<ApprovalState | null>(null);
   const [stockExceeded, setStockExceeded] = useState(false);
@@ -286,15 +293,22 @@ export const OrderNormalDetails = ({
         onProfileView={() => navigate(customerUrl(order.user.id))}
         onAddManualTransaction={() => openModal("add-manual-transaction")}
         onInvoiceClick={id =>
-          window.open(
-            order.invoices.find(invoice => invoice.id === id)?.url,
-            "_blank",
-            "rel=noopener",
-          )
+          setInvoiceModalState({
+            open: true,
+            invoiceId: id,
+          })
         }
-        onInvoiceGenerate={() =>
+        onInvoiceGenerate={() => {
           orderInvoiceRequest.mutate({
             orderId: id,
+          });
+          setInvoiceModalState({
+            open: true,
+          });
+        }}
+        onInvoicePrint={() =>
+          setInvoiceModalState({
+            open: true,
           })
         }
         onInvoiceSend={id => openModal("invoice-send", { id })}
@@ -525,6 +539,12 @@ export const OrderNormalDetails = ({
         onConfirm={handleCustomerChangeAddresses}
         confirmButtonState={orderUpdate.opts.status}
         errors={orderUpdate.opts.data?.orderUpdate.errors}
+      />
+      <EasyToPickInvoiceModal
+        open={invoiceModalState.open}
+        onClose={() => setInvoiceModalState({ open: false })}
+        order={order}
+        selectedInvoiceId={invoiceModalState.invoiceId}
       />
     </>
   );

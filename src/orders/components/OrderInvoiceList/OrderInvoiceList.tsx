@@ -7,7 +7,8 @@ import { type InvoiceFragment } from "@dashboard/graphql";
 import { buttonMessages } from "@dashboard/intl";
 import { TableBody, TableCell } from "@material-ui/core";
 import { makeStyles } from "@saleor/macaw-ui";
-import { Button, Skeleton, Text } from "@saleor/macaw-ui-next";
+import { Box, Button, Skeleton, Text } from "@saleor/macaw-ui-next";
+import { Printer } from "lucide-react";
 import { FormattedMessage, useIntl } from "react-intl";
 
 const useStyles = makeStyles(
@@ -42,10 +43,11 @@ interface OrderInvoiceListProps {
   onInvoiceGenerate: () => void;
   onInvoiceClick: (invoiceId: string) => void;
   onInvoiceSend: (invoiceId: string) => void;
+  onInvoicePrint?: () => void;
 }
 
 const OrderInvoiceList = (props: OrderInvoiceListProps) => {
-  const { invoices, onInvoiceGenerate, onInvoiceClick, onInvoiceSend } = props;
+  const { invoices, onInvoiceGenerate, onInvoiceClick, onInvoiceSend, onInvoicePrint } = props;
   const classes = useStyles(props);
   const intl = useIntl();
   const generatedInvoices = invoices?.filter(invoice => invoice.status === "SUCCESS");
@@ -61,15 +63,23 @@ const OrderInvoiceList = (props: OrderInvoiceListProps) => {
           })}
         </DashboardCard.Title>
         <DashboardCard.Toolbar>
-          {onInvoiceGenerate && (
-            <Button variant="secondary" onClick={onInvoiceGenerate}>
-              <FormattedMessage
-                id="e0RKe+"
-                defaultMessage="Generate"
-                description="generate invoice button"
-              />
-            </Button>
-          )}
+          <Box display="flex" gap={2}>
+            {onInvoicePrint && (
+              <Button variant="secondary" onClick={onInvoicePrint}>
+                <Printer size={16} />
+                <span>EasyToPick Invoice</span>
+              </Button>
+            )}
+            {onInvoiceGenerate && (
+              <Button variant="primary" onClick={onInvoiceGenerate}>
+                <FormattedMessage
+                  id="e0RKe+"
+                  defaultMessage="Generate"
+                  description="generate invoice button"
+                />
+              </Button>
+            )}
+          </Box>
         </DashboardCard.Toolbar>
       </DashboardCard.Header>
       <DashboardCard.Content>
@@ -102,6 +112,20 @@ const OrderInvoiceList = (props: OrderInvoiceListProps) => {
                       />{" "}
                       <Date date={invoice.createdAt} plain />
                     </Text>
+                  </TableCell>
+                  <TableCell
+                    className={classes.colAction}
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (onInvoiceClick) {
+                        onInvoiceClick(invoice.id);
+                      }
+                    }}
+                  >
+                    <Button variant="secondary">
+                      <Printer size={14} />
+                      <span>Print</span>
+                    </Button>
                   </TableCell>
                   {onInvoiceSend && (
                     <TableCell
