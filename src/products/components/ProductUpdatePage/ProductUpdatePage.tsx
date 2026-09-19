@@ -62,9 +62,10 @@ import { useCachedLocales } from "@dashboard/translations/useCachedLocales";
 import { type FetchMoreProps, type RelayToFlat } from "@dashboard/types";
 import { type UseRichTextResult } from "@dashboard/utils/richText/useRichText";
 import { type OutputData } from "@editorjs/editorjs";
-import { Box, Divider, type Option } from "@saleor/macaw-ui-next";
+import { Box, Button, Divider, type Option } from "@saleor/macaw-ui-next";
+import { Copy } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useIntl } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import { type AttributeValuesMetadata, getChoices } from "../../utils/data";
 import { ProductDetailsForm } from "../ProductDetailsForm";
@@ -140,6 +141,7 @@ interface ProductUpdatePageProps {
   onFilterChange?: AssignAttributeValueDialogFilterChangeMap;
   onBulkCreateVariants?: (inputs: ProductVariantBulkCreateInput[]) => Promise<BulkCreateResult>;
   initialConstraints?: InitialConstraints & InitialPageConstraints;
+  onDuplicate?: () => void;
 }
 
 const ProductUpdatePage = ({
@@ -177,6 +179,7 @@ const ProductUpdatePage = ({
   onVariantShow,
   onSeoClick,
   onSubmit,
+  onDuplicate,
   isMediaUrlModalVisible,
   assignReferencesAttributeId,
   onAttributeValuesSearch,
@@ -420,6 +423,22 @@ const ProductUpdatePage = ({
           <>
             <DetailPageLayout>
               <TopNav href={backLinkProductUrl} title={header}>
+                {onDuplicate && (
+                  <Button
+                    variant="secondary"
+                    onClick={onDuplicate}
+                    data-test-id="duplicate-product-button"
+                  >
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Copy size={16} />
+                      <FormattedMessage
+                        id="fh9Ga5"
+                        defaultMessage="Duplicate"
+                        description="duplicate product button"
+                      />
+                    </Box>
+                  </Button>
+                )}
                 {canTranslate && (
                   <TranslationsButton
                     marginRight={3}
@@ -430,6 +449,19 @@ const ProductUpdatePage = ({
                 )}
                 <TopNav.Menu
                   items={[
+                    ...(onDuplicate
+                      ? [
+                          {
+                            label: intl.formatMessage({
+                              id: '/G08qR',
+                              defaultMessage: "Duplicate product",
+                              description: "duplicate product menu item",
+                            }),
+                            onSelect: onDuplicate,
+                            testId: "duplicate-product-menu-item",
+                          },
+                        ]
+                      : []),
                     ...extensionMenuItems,
                     {
                       label: intl.formatMessage(messages.openGraphiQL),
