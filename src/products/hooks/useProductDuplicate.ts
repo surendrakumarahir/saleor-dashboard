@@ -20,6 +20,7 @@ import { useCallback, useState } from "react";
 
 export interface DuplicateProductOptions {
   name: string;
+  slug?: string;
   sku?: string;
   copyMedia: boolean;
   copyPricing: boolean;
@@ -60,6 +61,7 @@ export const useProductDuplicate = () => {
 
         const productInput: ProductCreateInput = {
           name: options.name.trim(),
+          slug: options.slug?.trim() || undefined,
           description: product.description,
           productType: product.productType.id,
           category: product.category?.id || null,

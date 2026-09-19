@@ -113,6 +113,7 @@ describe("useProductDuplicate", () => {
     // Act
     const duplicateResult = await result.current.duplicateProduct(originalProduct as any, {
       name: "Disha Errorless 39 Years NEET Chemistry",
+      slug: "disha-errorless-39-years-neet-chemistry",
       sku: "DISHA-CHEM-01",
       copyMedia: true,
       copyPricing: true,
@@ -126,6 +127,7 @@ describe("useProductDuplicate", () => {
       variables: {
         input: expect.objectContaining({
           name: "Disha Errorless 39 Years NEET Chemistry",
+          slug: "disha-errorless-39-years-neet-chemistry",
           productType: "pt-1",
           category: "cat-1",
         }),

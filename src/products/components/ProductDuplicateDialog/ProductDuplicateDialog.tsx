@@ -6,8 +6,9 @@ import { useProductDuplicate } from "@dashboard/products/hooks/useProductDuplica
 import { getProductErrorMessage } from "@dashboard/utils/errors";
 import { Box, Button, Checkbox, Input, Skeleton, Text } from "@saleor/macaw-ui-next";
 import { Copy } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import slugify from "slugify";
 
 import { duplicateDialogMessages as messages } from "./messages";
 import styles from "./ProductDuplicateDialog.module.css";
@@ -32,6 +33,8 @@ export const ProductDuplicateDialog = ({
   const { duplicateProduct, loading: isDuplicating } = useProductDuplicate();
 
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [isSlugCustomized, setIsSlugCustomized] = useState(false);
   const [sku, setSku] = useState("");
   const [copyMedia, setCopyMedia] = useState(true);
   const [copyPricing, setCopyPricing] = useState(true);
@@ -41,7 +44,16 @@ export const ProductDuplicateDialog = ({
   // Initialize or reset state when product changes or dialog opens
   useEffect(() => {
     if (product && open) {
-      setName(`Copy of ${product.name}`);
+      const initialName = `Copy of ${product.name}`;
+
+      setName(initialName);
+
+      const generatedSlug = product.slug
+        ? `${product.slug}-copy`
+        : slugify(initialName, { lower: true, strict: true, trim: true });
+
+      setSlug(generatedSlug);
+      setIsSlugCustomized(false);
 
       const defaultVariantSku = product.variants?.[0]?.sku;
 
@@ -52,6 +64,25 @@ export const ProductDuplicateDialog = ({
       setFormError(null);
     }
   }, [product, open]);
+
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+
+    setName(newName);
+
+    if (!isSlugCustomized) {
+      setSlug(slugify(newName, { lower: true, strict: true, trim: true }));
+    }
+
+    if (formError) {
+      setFormError(null);
+    }
+  };
+
+  const handleSlugChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setIsSlugCustomized(true);
+    setSlug(e.target.value);
+  };
 
   const handleSubmit = async (event?: FormEvent) => {
     if (event) {
@@ -74,6 +105,7 @@ export const ProductDuplicateDialog = ({
 
     const result = await duplicateProduct(product, {
       name: trimmedName,
+      slug: slug.trim() || undefined,
       sku: sku.trim() || undefined,
       copyMedia,
       copyPricing,
@@ -139,16 +171,18 @@ export const ProductDuplicateDialog = ({
                   required
                   label={intl.formatMessage(messages.nameLabel)}
                   value={name}
-                  onChange={e => {
-                    setName(e.target.value);
-
-                    if (formError) {
-                      setFormError(null);
-                    }
-                  }}
+                  onChange={handleNameChange}
                   error={!!formError}
                   helperText={formError ?? undefined}
                   data-test-id="duplicate-product-name-input"
+                />
+
+                <Input
+                  label={intl.formatMessage(messages.slugLabel)}
+                  value={slug}
+                  onChange={handleSlugChange}
+                  helperText={intl.formatMessage(messages.slugHelperText)}
+                  data-test-id="duplicate-product-slug-input"
                 />
 
                 {isSimpleProduct && (

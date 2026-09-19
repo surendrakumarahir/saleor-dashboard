@@ -17,6 +17,16 @@ export const duplicateDialogMessages = defineMessages({
     defaultMessage: "New Product Name",
     description: "input label",
   },
+  slugLabel: {
+    id: '7vK2rX',
+    defaultMessage: "Product Slug / URL",
+    description: "input label",
+  },
+  slugHelperText: {
+    id: 'bX9q1M',
+    defaultMessage: "Unique URL handle for the product (e.g. disha-neet-chemistry)",
+    description: "input helper text",
+  },
   skuLabel: {
     id: '2EWEVg',
     defaultMessage: "SKU",
