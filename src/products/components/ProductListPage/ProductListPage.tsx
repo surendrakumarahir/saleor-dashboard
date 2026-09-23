@@ -38,7 +38,7 @@ import {
 } from "@dashboard/types";
 import { hasLimits, isLimitReached } from "@dashboard/utils/limits";
 import { Box, Button, Text } from "@saleor/macaw-ui-next";
-import { Copy } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useLocation } from "react-router";
@@ -73,6 +73,7 @@ interface ProductListPageProps
   availableColumnsAttributesOpts: ReturnType<typeof useAvailableColumnAttributesLazyQuery>;
   onProductsDelete: () => void;
   onProductDuplicate?: (id: string) => void;
+  onAmazonImport?: () => void;
   onSelectProductIds: (ids: number[], clearSelection: () => void) => void;
   clearRowSelection: () => void;
   filterDependency?: FilterElement;
@@ -107,6 +108,7 @@ const ProductListPage = (props: ProductListPageProps) => {
     selectedProductIds,
     onProductsDelete,
     onProductDuplicate,
+    onAmazonImport,
     clearRowSelection,
     filterDependency,
     ...listProps
@@ -190,6 +192,20 @@ const ProductListPage = (props: ProductListPageProps) => {
                 ...extensionMenuItems,
               ]}
             />
+            {onAmazonImport && (
+              <Button
+                variant="secondary"
+                data-test-id="amazon-import"
+                onClick={onAmazonImport}
+              >
+                <Sparkles size={16} />
+                <FormattedMessage
+                  id="amazonImportButton"
+                  defaultMessage="Import from Amazon"
+                  description="button"
+                />
+              </Button>
+            )}
             {extensionCreateButtonItems.length > 0 ? (
               <ButtonGroupWithDropdown
                 onClick={onAdd}

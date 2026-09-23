@@ -53,6 +53,7 @@ import {
   productUrl,
 } from "@dashboard/products/urls";
 import useAttributeSearch from "@dashboard/searches/useAttributeSearch";
+import useCategorySearch from "@dashboard/searches/useCategorySearch";
 import useProductTypeSearch from "@dashboard/searches/useProductTypeSearch";
 import { ListViews } from "@dashboard/types";
 import createDialogActionHandlers from "@dashboard/utils/handlers/dialogActionHandlers";
@@ -62,6 +63,7 @@ import isEqual from "lodash/isEqual";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
+import { AmazonImportDialog } from "../../components/AmazonImportDialog/AmazonImportDialog";
 import { ProductDuplicateDialog } from "../../components/ProductDuplicateDialog/ProductDuplicateDialog";
 import ProductListPage, { ProductFilterKeys } from "../../components/ProductListPage";
 import { ProductsExportParameters } from "./export";
@@ -87,6 +89,13 @@ const ProductList = ({ params }: ProductListProps) => {
 
   const intl = useIntl();
   const [duplicateProductId, setDuplicateProductId] = useState<string | null>(null);
+  const [isAmazonImportOpen, setIsAmazonImportOpen] = useState(false);
+  const searchCategories = useCategorySearch({
+    variables: {
+      ...DEFAULT_INITIAL_SEARCH_DATA,
+      first: VALUES_PAGINATE_BY,
+    },
+  });
   const [loadProductDetails, { data: duplicateProductDetailsData, loading: loadingDuplicateProduct }] =
     useProductDetailsLazyQuery();
 
@@ -119,7 +128,7 @@ const ProductList = ({ params }: ProductListProps) => {
     variables: {
       first: 100,
     },
-    skip: params.action !== "export",
+    skip: params.action !== "export" && !isAmazonImportOpen,
   });
   const { availableChannels } = useAppChannel(false);
   const limitOpts = useShopLimitsQuery({
@@ -345,6 +354,7 @@ const ProductList = ({ params }: ProductListProps) => {
         selectedProductIds={selectedRowIds}
         onSelectProductIds={handleSetSelectedProductIds}
         onProductDuplicate={handleProductDuplicate}
+        onAmazonImport={() => setIsAmazonImportOpen(true)}
         clearRowSelection={clearRowSelection}
       />
       <ActionDialog
@@ -441,6 +451,28 @@ const ProductList = ({ params }: ProductListProps) => {
           clearRowSelection();
           refetch();
           navigate(productUrl(newProductId));
+        }}
+      />
+      <AmazonImportDialog
+        open={isAmazonImportOpen}
+        onClose={() => setIsAmazonImportOpen(false)}
+        channels={availableChannels || []}
+        defaultWarehouseId={
+          mapEdgesToItems(warehouses?.data?.warehouses)?.find(w =>
+            w.name?.toLowerCase().includes("kota"),
+          )?.id || "V2FyZWhvdXNlOjI2ZmQ5NzdiLTMyMmUtNDQ5OS1hYWJhLTI2MjMwNTU3OWM2ZQ=="
+        }
+        productTypes={mapEdgesToItems(searchDialogProductTypesOpts?.data?.search) || []}
+        categories={mapEdgesToItems(searchCategories.result?.data?.search) || []}
+        onImportSuccess={() => {
+          refetch();
+          notify({
+            status: "success",
+            text: intl.formatMessage({
+              defaultMessage: "Product imported from Amazon successfully!",
+              id: "amazonImportSuccessNotification",
+            }),
+          });
         }}
       />
     </PaginatorContext.Provider>
