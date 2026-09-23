@@ -35,11 +35,12 @@ import { getProductErrorMessage } from "@dashboard/utils/errors";
 import useAttributeValueSearchHandler from "@dashboard/utils/handlers/attributeValueSearchHandler";
 import createDialogActionHandlers from "@dashboard/utils/handlers/dialogActionHandlers";
 import { mapEdgesToItems } from "@dashboard/utils/maps";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
 import { useAssignAttributeValueDialogFilterChangeHandlers } from "../../../components/AssignAttributeValueDialog/useAssignAttributeValueDialogFilterChangeHandlers";
 import { getMutationState } from "../../../misc";
+import { ProductDuplicateDialog } from "../../components/ProductDuplicateDialog/ProductDuplicateDialog";
 import ProductUpdatePage from "../../components/ProductUpdatePage";
 import {
   productListUrl,
@@ -61,6 +62,7 @@ const ProductUpdate = ({ id, params }: ProductUpdateProps) => {
   const navigate = useNavigator();
   const notify = useNotifier();
   const intl = useIntl();
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const {
     loadMore: loadMoreCategories,
     search: searchCategories,
@@ -449,7 +451,16 @@ const ProductUpdate = ({ id, params }: ProductUpdateProps) => {
         onFilterChange={onFilterChange}
         onBulkCreateVariants={handleBulkCreateVariants}
         initialConstraints={initialConstraints}
+        onDuplicate={() => setIsDuplicateModalOpen(true)}
       />
+      {product && (
+        <ProductDuplicateDialog
+          open={isDuplicateModalOpen}
+          product={product}
+          onClose={() => setIsDuplicateModalOpen(false)}
+          onSuccess={newProductId => navigate(productUrl(newProductId))}
+        />
+      )}
       <ActionDialog
         open={params.action === "remove"}
         onClose={closeModal}

@@ -6,6 +6,7 @@ import path from "path";
 import nodePolyfills from "rollup-plugin-polyfill-node";
 import { defineConfig, loadEnv, searchForWorkspaceRoot } from "vite";
 import { createHtmlPlugin } from "vite-plugin-html";
+import { amazonScraperPlugin } from "./scripts/amazonScraperPlugin.js";
 
 const copyNoopSW = () => ({
   name: "copy-noop-sw",
@@ -95,6 +96,7 @@ export default defineConfig(({ command, mode }) => {
     }),
     copyOgImage(),
     copyNoopSW(),
+    amazonScraperPlugin(),
   ];
 
   if (!isDev) {
