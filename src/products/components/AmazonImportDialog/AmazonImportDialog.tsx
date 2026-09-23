@@ -4,6 +4,8 @@ import {
   AlertCircle,
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Crop,
   Download,
   ExternalLink,
@@ -291,6 +293,49 @@ export const AmazonImportDialog = ({
     }
   };
 
+  // Publish All Products Sequentially
+  const [publishingAll, setPublishingAll] = useState(false);
+
+  const updateProductById = (tempId: string, updates: Partial<EditableAmazonProduct>) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.tempId === tempId ? { ...p, ...updates } : p))
+    );
+  };
+
+  const handlePublishAll = async () => {
+    if (publishing || publishingAll || products.length === 0) return;
+    setPublishingAll(true);
+
+    const warehouseId = defaultWarehouseId || KOTA_WAREHOUSE_ID;
+
+    for (let i = 0; i < products.length; i++) {
+      const prod = products[i];
+      if (prod.status === "success") continue;
+
+      setActiveTabIndex(i);
+      updateProductById(prod.tempId, { status: "publishing", errorMessage: undefined });
+
+      const result = await publishProduct(prod, channels, warehouseId);
+
+      if (result.success && result.productId) {
+        updateProductById(prod.tempId, {
+          status: "success",
+          createdProductId: result.productId,
+        });
+        if (onImportSuccess) {
+          onImportSuccess(result.productId);
+        }
+      } else {
+        updateProductById(prod.tempId, {
+          status: "error",
+          errorMessage: result.errorMessage || "Failed to publish product",
+        });
+      }
+    }
+
+    setPublishingAll(false);
+  };
+
   // Discount calculation
   const discountPercent = useMemo(() => {
     if (!activeProduct) return 0;
@@ -326,6 +371,70 @@ export const AmazonImportDialog = ({
             <X size={18} />
           </Button>
         </div>
+
+        {/* Sub-header for Multiple Products Navigation (Fixed outside scrollable body to prevent overlap) */}
+        {products.length > 1 && (
+          <div className={styles.productTabsContainer}>
+            <div className={styles.productTabsList}>
+              {products.map((prod, idx) => {
+                const isActive = idx === activeTabIndex;
+                return (
+                  <div
+                    key={prod.tempId}
+                    className={`${styles.productTab} ${
+                      isActive ? styles.productTabActive : ""
+                    }`}
+                    onClick={() => setActiveTabIndex(idx)}
+                    title={prod.name}
+                  >
+                    <span className={styles.productTabPill}>{idx + 1}</span>
+                    <span className={styles.productTabTitle}>
+                      {prod.name || `Product ${idx + 1}`}
+                    </span>
+                    {prod.status === "success" && (
+                      <CheckCircle2 size={13} color="#166534" />
+                    )}
+                    {prod.status === "error" && (
+                      <AlertCircle size={13} color="#991b1b" />
+                    )}
+                    {prod.status === "publishing" && (
+                      <div
+                        className={styles.loadingSpinner}
+                        style={{ width: 12, height: 12, borderWidth: 2 }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className={styles.tabNavActions}>
+              <button
+                type="button"
+                className={styles.tabNavBtn}
+                onClick={() => setActiveTabIndex((i) => Math.max(0, i - 1))}
+                disabled={activeTabIndex === 0}
+                title="Previous Product"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
+                {activeTabIndex + 1} / {products.length}
+              </span>
+              <button
+                type="button"
+                className={styles.tabNavBtn}
+                onClick={() =>
+                  setActiveTabIndex((i) => Math.min(products.length - 1, i + 1))
+                }
+                disabled={activeTabIndex === products.length - 1}
+                title="Next Product"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         <div className={styles.modalBody}>
@@ -416,32 +525,8 @@ export const AmazonImportDialog = ({
               )}
             </div>
           ) : (
-            /* Step 2: Product Details, Attributes & Single Image Select */
+            /* Step 2: Product Details, Attributes & Multi-Image Select */
             <>
-              {/* Tabs for Multiple Products */}
-              {products.length > 1 && (
-                <div className={styles.productTabs}>
-                  {products.map((prod, idx) => (
-                    <div
-                      key={prod.tempId}
-                      className={`${styles.productTab} ${
-                        idx === activeTabIndex ? styles.productTabActive : ""
-                      }`}
-                      onClick={() => setActiveTabIndex(idx)}
-                    >
-                      <Layers size={14} />
-                      <span>{prod.name || `Product ${idx + 1}`}</span>
-                      {prod.status === "success" && (
-                        <CheckCircle2 size={14} color="#166534" />
-                      )}
-                      {prod.status === "error" && (
-                        <AlertCircle size={14} color="#991b1b" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
               {/* Status Banner */}
               {activeProduct?.status === "success" && (
                 <div
@@ -453,6 +538,7 @@ export const AmazonImportDialog = ({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    flexShrink: 0,
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -491,6 +577,7 @@ export const AmazonImportDialog = ({
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
+                    flexShrink: 0,
                   }}
                 >
                   <AlertCircle size={18} />
@@ -509,12 +596,15 @@ export const AmazonImportDialog = ({
                   background: "#ffffff",
                   border: "1px solid #e2e8f0",
                   borderRadius: 10,
+                  flexShrink: 0,
                 }}
               >
                 <span className={styles.badge}>Product Type: Books</span>
                 <span className={styles.badge}>Channel: Channel-INR</span>
                 <span className={styles.badge}>Stock: Kota India (Qty: 100)</span>
-                <span className={styles.badge}>Image: Single Cover Image</span>
+                <span className={styles.badge}>
+                  Images: {activeProduct?.selectedImages?.length || 0} Selected
+                </span>
               </div>
 
               {/* 1. Basic Product Information Card */}
@@ -879,15 +969,49 @@ export const AmazonImportDialog = ({
               </Button>
 
               <Box display="flex" gap={2}>
-                <Button variant="secondary" onClick={onClose} disabled={publishing}>
+                <Button
+                  variant="secondary"
+                  onClick={onClose}
+                  disabled={publishing || publishingAll}
+                >
                   Close
                 </Button>
+
+                {products.length > 1 && (
+                  <Button
+                    variant="secondary"
+                    onClick={handlePublishAll}
+                    disabled={
+                      publishing ||
+                      publishingAll ||
+                      products.every((p) => p.status === "success")
+                    }
+                  >
+                    {publishingAll ? (
+                      <>
+                        <div className={styles.loadingSpinner} />
+                        Publishing All...
+                      </>
+                    ) : (
+                      <>
+                        <Layers size={15} />
+                        Publish All (
+                        {products.filter((p) => p.status !== "success").length})
+                      </>
+                    )}
+                  </Button>
+                )}
+
                 <Button
                   variant="primary"
                   onClick={handlePublishActive}
-                  disabled={publishing || activeProduct?.status === "publishing"}
+                  disabled={
+                    publishing || publishingAll || activeProduct?.status === "publishing"
+                  }
                 >
-                  {publishing || activeProduct?.status === "publishing" ? (
+                  {publishing ||
+                  publishingAll ||
+                  activeProduct?.status === "publishing" ? (
                     <>
                       <div className={styles.loadingSpinner} />
                       Publishing to Store...
@@ -895,12 +1019,15 @@ export const AmazonImportDialog = ({
                   ) : activeProduct?.status === "success" ? (
                     <>
                       <CheckCircle2 size={16} />
-                      Imported Successfully
+                      Imported ({activeTabIndex + 1}/{products.length})
                     </>
                   ) : (
                     <>
                       <Sparkles size={16} />
-                      Import & Publish Product
+                      Import & Publish Product{" "}
+                      {products.length > 1
+                        ? `(${activeTabIndex + 1}/${products.length})`
+                        : ""}
                     </>
                   )}
                 </Button>
