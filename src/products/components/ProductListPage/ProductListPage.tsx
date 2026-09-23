@@ -38,6 +38,7 @@ import {
 } from "@dashboard/types";
 import { hasLimits, isLimitReached } from "@dashboard/utils/limits";
 import { Box, Button, Text } from "@saleor/macaw-ui-next";
+import { Copy, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useLocation } from "react-router";
@@ -71,6 +72,8 @@ interface ProductListPageProps
   onTabDelete: (tabIndex: number) => void;
   availableColumnsAttributesOpts: ReturnType<typeof useAvailableColumnAttributesLazyQuery>;
   onProductsDelete: () => void;
+  onProductDuplicate?: (id: string) => void;
+  onAmazonImport?: () => void;
   onSelectProductIds: (ids: number[], clearSelection: () => void) => void;
   clearRowSelection: () => void;
   filterDependency?: FilterElement;
@@ -104,6 +107,8 @@ const ProductListPage = (props: ProductListPageProps) => {
     hasPresetsChanged,
     selectedProductIds,
     onProductsDelete,
+    onProductDuplicate,
+    onAmazonImport,
     clearRowSelection,
     filterDependency,
     ...listProps
@@ -187,6 +192,20 @@ const ProductListPage = (props: ProductListPageProps) => {
                 ...extensionMenuItems,
               ]}
             />
+            {onAmazonImport && (
+              <Button
+                variant="secondary"
+                data-test-id="amazon-import"
+                onClick={onAmazonImport}
+              >
+                <Sparkles size={16} />
+                <FormattedMessage
+                  id="amazonImportButton"
+                  defaultMessage="Import from Amazon"
+                  description="button"
+                />
+              </Button>
+            )}
             {extensionCreateButtonItems.length > 0 ? (
               <ButtonGroupWithDropdown
                 onClick={onAdd}
@@ -243,6 +262,22 @@ const ProductListPage = (props: ProductListPageProps) => {
             })}
             actions={
               <Box display="flex" gap={4}>
+                {selectedProductIds.length === 1 && onProductDuplicate && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => onProductDuplicate(selectedProductIds[0])}
+                    data-test-id="duplicate-selected-product"
+                  >
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Copy size={16} />
+                      <FormattedMessage
+                        id="fh9Ga5"
+                        defaultMessage="Duplicate"
+                        description="duplicate product button"
+                      />
+                    </Box>
+                  </Button>
+                )}
                 {selectedProductIds.length > 0 && (
                   <BulkDeleteButton onClick={onProductsDelete}>
                     <FormattedMessage defaultMessage="Delete products" id="uwk5e9" />

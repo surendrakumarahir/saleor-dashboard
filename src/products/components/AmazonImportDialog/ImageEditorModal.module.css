@@ -1,0 +1,168 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1500;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  background: var(--mu-color-background-plain, #ffffff);
+  border-radius: 12px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--mu-color-border-subtle, #e2e8f0);
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+  min-height: 450px;
+}
+
+@media (max-width: 768px) {
+  .modalBody {
+    flex-direction: column;
+  }
+}
+
+.canvasWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a1a;
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.canvas {
+  max-width: 100%;
+  max-height: 460px;
+  object-fit: contain;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+}
+
+.loadingPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sidebar {
+  width: 280px;
+  padding: 20px;
+  background-color: var(--mu-color-background-subtle, #f8fafc);
+  border-left: 1px solid var(--mu-color-border-subtle, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.controlSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sliderRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sliderHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--mu-color-text-subtle, #64748b);
+}
+
+.sliderValue {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.slider {
+  width: 100%;
+  cursor: pointer;
+}
+
+.aspectGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--mu-color-border-subtle, #cbd5e1);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.actionButton:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.activeButton {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--mu-color-border-subtle, #e2e8f0);
+  background-color: var(--mu-color-background-plain, #ffffff);
+}
