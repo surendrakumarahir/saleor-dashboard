@@ -89,6 +89,7 @@ export const AmazonImportDialog = ({
 
     if (rawUrls.length === 0) {
       setExtractError("Please enter at least one Amazon URL or ASIN");
+
       return;
     }
 
@@ -96,19 +97,57 @@ export const AmazonImportDialog = ({
     setExtractError(null);
 
     try {
-      const response = await fetch("/api/amazon-extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urls: rawUrls }),
-      });
+      const scraperBase =
+        (typeof process !== "undefined" && process.env?.AMAZON_SCRAPER_API_URL) ||
+        (typeof window !== "undefined" && (window as any).__AMAZON_SCRAPER_API_URL__) ||
+        "";
+
+      const extractEndpoint = scraperBase
+        ? `${scraperBase.replace(/\/+$/, "")}/api/amazon-extract`
+        : "/api/amazon-extract";
+
+      let response: Response;
+
+      try {
+        response = await fetch(extractEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls: rawUrls }),
+        });
+      } catch (netErr: unknown) {
+        const netMsg = netErr instanceof Error ? netErr.message : "Network error";
+
+        setExtractError(
+          `Cannot connect to Amazon scraper service (${extractEndpoint}). Please ensure the scraper server is running: ${netMsg}`
+        );
+        setExtracting(false);
+
+        return;
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!contentType.includes("application/json")) {
+        const text = await response.text();
+        const snippet = text.slice(0, 100).replace(/<[^>]+>/g, "").trim();
+
+        setExtractError(
+          `Scraper service endpoint returned non-JSON response (HTTP ${response.status}: ${snippet || "Endpoint not found"}). In production, please configure the Amazon Scraper backend server (AMAZON_SCRAPER_API_URL).`
+        );
+        setExtracting(false);
+
+        return;
+      }
 
       const data: ExtractResponse = await response.json();
 
       if (!data.success || !data.products || data.products.length === 0) {
         const errorMsg =
           data.errors?.[0]?.error || "Could not extract product details. Please check the URL/ASIN.";
+
         setExtractError(errorMsg);
         setExtracting(false);
+
         return;
       }
 
@@ -170,6 +209,7 @@ export const AmazonImportDialog = ({
       setActiveTabIndex(0);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to extract product from Amazon";
+
       setExtractError(msg);
     } finally {
       setExtracting(false);
@@ -181,12 +221,15 @@ export const AmazonImportDialog = ({
   // Update field of the active product
   const updateActiveProduct = (field: keyof EditableAmazonProduct, value: unknown) => {
     if (!activeProduct) return;
+
     setProducts((prev) => {
       const copy = [...prev];
+
       copy[activeTabIndex] = {
         ...copy[activeTabIndex],
         [field]: value,
       };
+
       return copy;
     });
   };
@@ -194,6 +237,7 @@ export const AmazonImportDialog = ({
   // Toggle selection of an image (user can select one or more images)
   const toggleImageSelection = (imgUrl: string) => {
     if (!activeProduct) return;
+
     const current = activeProduct.selectedImages || [];
     const isSelected = current.includes(imgUrl);
     let updated: string[];
@@ -201,11 +245,13 @@ export const AmazonImportDialog = ({
 
     if (isSelected) {
       updated = current.filter((u) => u !== imgUrl);
+
       if (newPrimary === imgUrl) {
         newPrimary = updated[0] || "";
       }
     } else {
       updated = [...current, imgUrl];
+
       if (!newPrimary) {
         newPrimary = imgUrl;
       }
@@ -218,15 +264,19 @@ export const AmazonImportDialog = ({
   // Designate an image as the main Cover image
   const setCoverImage = (imgUrl: string) => {
     if (!activeProduct) return;
+
     const current = activeProduct.selectedImages || [];
     const updated = current.includes(imgUrl) ? current : [imgUrl, ...current];
+
     updateActiveProduct("selectedImages", updated);
     updateActiveProduct("primaryImage", imgUrl);
   };
 
   const selectAllImages = () => {
     if (!activeProduct) return;
+
     updateActiveProduct("selectedImages", [...activeProduct.images]);
+
     if (!activeProduct.primaryImage && activeProduct.images.length > 0) {
       updateActiveProduct("primaryImage", activeProduct.images[0]);
     }
@@ -234,6 +284,7 @@ export const AmazonImportDialog = ({
 
   const deselectAllImages = () => {
     if (!activeProduct) return;
+
     updateActiveProduct("selectedImages", []);
     updateActiveProduct("primaryImage", "");
   };
@@ -246,6 +297,7 @@ export const AmazonImportDialog = ({
 
   const handleSaveEditedImage = (editedDataUrl: string) => {
     if (!activeProduct || editingImageIndex === -1) return;
+
     const originalUrl = activeProduct.images[editingImageIndex];
 
     const updatedImages = [...activeProduct.images];
@@ -262,12 +314,14 @@ export const AmazonImportDialog = ({
 
     setProducts((prev) => {
       const copy = [...prev];
+
       copy[activeTabIndex] = {
         ...copy[activeTabIndex],
         images: updatedImages,
         selectedImages: updatedSelected,
         primaryImage: isPrimary ? editedDataUrl : copy[activeTabIndex].primaryImage,
       };
+
       return copy;
     });
   };
@@ -275,6 +329,7 @@ export const AmazonImportDialog = ({
   // Publish Active Product
   const handlePublishActive = async () => {
     if (!activeProduct) return;
+
     updateActiveProduct("status", "publishing");
     updateActiveProduct("errorMessage", undefined);
 
@@ -284,6 +339,7 @@ export const AmazonImportDialog = ({
     if (result.success && result.productId) {
       updateActiveProduct("status", "success");
       updateActiveProduct("createdProductId", result.productId);
+
       if (onImportSuccess) {
         onImportSuccess(result.productId);
       }
@@ -304,12 +360,14 @@ export const AmazonImportDialog = ({
 
   const handlePublishAll = async () => {
     if (publishing || publishingAll || products.length === 0) return;
+
     setPublishingAll(true);
 
     const warehouseId = defaultWarehouseId || KOTA_WAREHOUSE_ID;
 
     for (let i = 0; i < products.length; i++) {
       const prod = products[i];
+
       if (prod.status === "success") continue;
 
       setActiveTabIndex(i);
@@ -322,6 +380,7 @@ export const AmazonImportDialog = ({
           status: "success",
           createdProductId: result.productId,
         });
+
         if (onImportSuccess) {
           onImportSuccess(result.productId);
         }
@@ -339,11 +398,14 @@ export const AmazonImportDialog = ({
   // Discount calculation
   const discountPercent = useMemo(() => {
     if (!activeProduct) return 0;
+
     const sp = parseFloat(activeProduct.sellingPrice);
     const mrp = parseFloat(activeProduct.mrp);
+
     if (!isNaN(sp) && !isNaN(mrp) && mrp > sp && mrp > 0) {
       return Math.round(((mrp - sp) / mrp) * 100);
     }
+
     return 0;
   }, [activeProduct]);
 
@@ -378,6 +440,7 @@ export const AmazonImportDialog = ({
             <div className={styles.productTabsList}>
               {products.map((prod, idx) => {
                 const isActive = idx === activeTabIndex;
+
                 return (
                   <div
                     key={prod.tempId}

@@ -24,6 +24,7 @@
     "predev": "pnpm run generate",
     "dev": "vite --host",
     "dev:no-strict": "cross-env VITE_DISABLE_STRICT_MODE=true vite --host",
+    "start:scraper": "node scripts/amazonScraperServer.js",
     "e2e": "pnpm exec playwright test --grep \"#e2e\"",
     "e2e:clean-auth": "rm -rf ./playwright/.auth",
     "e2e:ui": "pnpm run e2e:clean-auth && pnpm exec playwright test --ui",
