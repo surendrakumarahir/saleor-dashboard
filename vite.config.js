@@ -57,6 +57,7 @@ export default defineConfig(({ command, mode }) => {
     SENTRY_PROJECT,
     ENABLED_SERVICE_NAME_HEADER,
     ONBOARDING_USER_JOINED_DATE_THRESHOLD,
+    AMAZON_SCRAPER_API_URL,
     // Multi-schema support
     FF_USE_STAGING_SCHEMA,
 
@@ -156,6 +157,7 @@ export default defineConfig(({ command, mode }) => {
         POSTHOG_HOST,
         ENABLED_SERVICE_NAME_HEADER,
         ONBOARDING_USER_JOINED_DATE_THRESHOLD,
+        AMAZON_SCRAPER_API_URL: AMAZON_SCRAPER_API_URL || "",
         // Multi-schema support
         FF_USE_STAGING_SCHEMA,
 

@@ -37,7 +37,16 @@ export const ImageEditorModal = ({
     if (!url || url.startsWith("data:") || url.startsWith("blob:")) {
       return url;
     }
-    return `/api/amazon-image-proxy?url=${encodeURIComponent(url)}`;
+
+    const scraperBase =
+      (typeof process !== "undefined" && process.env?.AMAZON_SCRAPER_API_URL) ||
+      (typeof window !== "undefined" && (window as any).__AMAZON_SCRAPER_API_URL__) ||
+      "";
+    const proxyBase = scraperBase
+      ? `${scraperBase.replace(/\/+$/, "")}/api/amazon-image-proxy`
+      : "/api/amazon-image-proxy";
+
+    return `${proxyBase}?url=${encodeURIComponent(url)}`;
   }, []);
 
   // Load image
@@ -58,6 +67,7 @@ export const ImageEditorModal = ({
 
     if (isDataOrBlob) {
       const img = new Image();
+
       img.onload = () => {
         originalImgRef.current = img;
         setImageLoaded(true);
@@ -66,11 +76,13 @@ export const ImageEditorModal = ({
         setLoadingError(true);
       };
       img.src = imageUrl;
+
       return;
     }
 
     // Remote URL: Use proxy with CORS
     const proxyImg = new Image();
+
     proxyImg.crossOrigin = "anonymous";
     proxyImg.onload = () => {
       originalImgRef.current = proxyImg;
@@ -79,6 +91,7 @@ export const ImageEditorModal = ({
     proxyImg.onerror = () => {
       // Try direct with crossOrigin
       const directCorsImg = new Image();
+
       directCorsImg.crossOrigin = "anonymous";
       directCorsImg.onload = () => {
         originalImgRef.current = directCorsImg;
@@ -87,6 +100,7 @@ export const ImageEditorModal = ({
       directCorsImg.onerror = () => {
         // Fallback to direct without crossOrigin
         const fallbackImg = new Image();
+
         fallbackImg.onload = () => {
           originalImgRef.current = fallbackImg;
           setImageLoaded(true);
@@ -106,9 +120,11 @@ export const ImageEditorModal = ({
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const img = originalImgRef.current;
+
     if (!canvas || !img || !imageLoaded) return;
 
     const ctx = canvas.getContext("2d");
+
     if (!ctx) return;
 
     let sourceX = 0;
@@ -121,6 +137,7 @@ export const ImageEditorModal = ({
     // Apply Aspect Ratio Crop calculation
     if (aspectRatio === "1:1") {
       const size = Math.min(sourceWidth, sourceHeight);
+
       sourceX = (sourceWidth - size) / 2;
       sourceY = (sourceHeight - size) / 2;
       sourceWidth = size;
@@ -128,36 +145,45 @@ export const ImageEditorModal = ({
     } else if (aspectRatio === "3:4") {
       const targetRatio = 3 / 4;
       const currentRatio = sourceWidth / sourceHeight;
+
       if (currentRatio > targetRatio) {
         const newWidth = sourceHeight * targetRatio;
+
         sourceX = (sourceWidth - newWidth) / 2;
         sourceWidth = newWidth;
       } else {
         const newHeight = sourceWidth / targetRatio;
+
         sourceY = (sourceHeight - newHeight) / 2;
         sourceHeight = newHeight;
       }
     } else if (aspectRatio === "4:3") {
       const targetRatio = 4 / 3;
       const currentRatio = sourceWidth / sourceHeight;
+
       if (currentRatio > targetRatio) {
         const newWidth = sourceHeight * targetRatio;
+
         sourceX = (sourceWidth - newWidth) / 2;
         sourceWidth = newWidth;
       } else {
         const newHeight = sourceWidth / targetRatio;
+
         sourceY = (sourceHeight - newHeight) / 2;
         sourceHeight = newHeight;
       }
     } else if (aspectRatio === "16:9") {
       const targetRatio = 16 / 9;
       const currentRatio = sourceWidth / sourceHeight;
+
       if (currentRatio > targetRatio) {
         const newWidth = sourceHeight * targetRatio;
+
         sourceX = (sourceWidth - newWidth) / 2;
         sourceWidth = newWidth;
       } else {
         const newHeight = sourceWidth / targetRatio;
+
         sourceY = (sourceHeight - newHeight) / 2;
         sourceHeight = newHeight;
       }
@@ -215,9 +241,12 @@ export const ImageEditorModal = ({
 
   const handleApply = () => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
+
     try {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+
       onSave(dataUrl);
       onClose();
     } catch (e) {

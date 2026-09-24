@@ -1,0 +1,166 @@
+Yaha Option A: Node.js (scripts/amazonScraperServer.js) ka pura step-by-step explanation hai. Ek-ek step ko aasan bhasha me samjhaya gaya hai taaki aap asani se setup kar sakein:
+
+Pehle Samajhiye: Ye Node.js Script karti kya hai?
+Aapki file 
+
+scripts/amazonScraperServer.js
+:
+
+Zero npm dependencies par chalti hai (yani aapko server par koi package install karne ki zaroorat nahi hai, ye Node ke inbuilt http, https, zlib use karti hai).
+Ye server par port 9005 par ek lightweight API server kholti hai.
+Jab bhi Dashboard se Amazon product ka link aata hai, ye Amazon se Title, Price, MRP, Details aur Images nikal kar clean JSON response wapas bhejti hai.
+Isme Image Proxy (/api/amazon-image-proxy) bhi inbuilt hai, jisse browser me Amazon ki images bina CORS error ke load hoti hain.
+🚀 Step 1: Apne Computer se Code ko Server par bhejna (Git)
+Pehle local machine par code save karke GitHub par bhejenge taaki EC2 server par latest file mil sake:
+
+Local VS Code / Terminal me ye commands chalayein:
+
+bash
+git add .
+git commit -m "Add standalone Node amazon scraper server"
+git push origin main
+Apne EC2 Server par SSH login karein:
+
+bash
+ssh -i your-key.pem ubuntu@api.easytopick.in
+(Note: your-key.pem ki jagah apni AWS key file aur IP/Domain dalein)
+
+EC2 server par project directory me jayein aur code update karein:
+
+bash
+cd /path/to/your/project
+git pull origin main
+Ab 
+
+scripts/amazonScraperServer.js
+ aapke EC2 server par aa chuki hai!
+
+⚙️ Step 2: PM2 Install karna (Background me 24/7 chalane ke liye)
+Agar hum direct node scripts/amazonScraperServer.js chalayenge, toh terminal band karte hi server bhi band ho jayega. Isliye hum PM2 use karte hain jo ise 24/7 background me rakhega aur server reboot hone par bhi automatic restart karega.
+
+PM2 globally install karein (EC2 terminal me):
+
+bash
+sudo npm install -g pm2
+Verify karein ki PM2 install ho gaya:
+
+bash
+pm2 -v
+(Aapko version number dikhega jaise 5.3.x)
+
+▶️ Step 3: Scraper Server ko PM2 me Start karna
+Scraper Server start karein:
+
+bash
+pm2 start scripts/amazonScraperServer.js --name "amazon-scraper"
+Terminal par aisi table dikhegi:
+
+text
+┌────┬────────────────┬─────────┬──────┬────────┬─────────┬────────┬─────┐
+│ id │ name           │ mode    │ ↺    │ status │ cpu     │ memory │ ... │
+├────┼────────────────┼─────────┼──────┼────────┼─────────┼────────┼─────┤
+│ 0  │ amazon-scraper │ fork    │ 0    │ online │ 0%      │ 32mb   │ ... │
+└────┴────────────────┴─────────┴──────┴────────┴─────────┴────────┴─────┘
+Agar status online hai, iska matlab scraper server background me port 9005 par successfully start ho gaya!
+
+EC2 ke andar hi test karein ki service chal rahi hai:
+
+bash
+curl http://127.0.0.1:9005/health
+Response aayega:
+
+json
+{"status":"ok","service":"Amazon Scraper & Image Proxy Microservice"}
+🔒 Step 4: Auto-Restart Setup karna (Taaki kabhi band na ho)
+Ye sabse important step hai. Isse agar EC2 server kabhi reboot ya restart bhi hota hai, toh scraper apne aap start ho jayega:
+
+Current PM2 processes ki list save karein:
+
+bash
+pm2 save
+System startup hook generate karein:
+
+bash
+pm2 startup
+Dhayan dein: pm2 startup run karne ke baad terminal par neeche ek line aayegi jo sudo env PATH=... se shuru hogi.
+
+Bas us puri sudo env PATH=... wali line ko copy karke terminal me paste karke Enter dabayein.
+
+✅ Ab ye 100% permanent ho chuka hai! Aapko ise dobara kabhi hath se chalane ki zaroorat nahi padegi.
+
+🌐 Step 5: EC2 Nginx Configuration (Internet se Connect karna)
+Abhi ye server sirf EC2 ke andar port 9005 par sun raha hai. Hume Nginx ko bolna hai ki jab bhi koi request https://api.easytopick.in/api/amazon-extract par aaye, toh wo use port 9005 par bhej de.
+
+Nginx config file open karein:
+
+bash
+sudo nano /etc/nginx/sites-available/saleor
+(Agar aapka domain config kisi aur naam se hai toh ls /etc/nginx/sites-available/ karke dekh lein).
+
+Nginx file ke andar jaha server { ... } block hai, usme ye do location blocks daal dijiye:
+
+nginx
+    # Amazon Scraper Endpoint
+    location /api/amazon-extract {
+        proxy_pass http://127.0.0.1:9005;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+    # Amazon Image Proxy Endpoint
+    location /api/amazon-image-proxy {
+        proxy_pass http://127.0.0.1:9005;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+File save karein:
+
+Keyboard par dabayein: Ctrl + O
+Enter dabayein
+Keyboard par dabayein: Ctrl + X (exit)
+Nginx test aur reload karein:
+
+bash
+sudo nginx -t
+Agar output me aaye syntax is ok and test is successful, tab reload karein:
+
+bash
+sudo systemctl reload nginx
+Internet se verify karein: Apne mobile ya browser me ye link open karein: 👉 https://api.easytopick.in/health Aapko dikhega:
+
+json
+{"status":"ok","service":"Amazon Scraper & Image Proxy Microservice"}
+Iska matlab Nginx ab scraper se successfully connect ho chuka hai!
+
+🖥️ Step 6: AWS Amplify me Environment Variable Set karna
+Dashboard ko batana hoga ki extraction API ab https://api.easytopick.in par chal rahi hai:
+
+AWS Console open karke AWS Amplify me jayein.
+Apna dashboard project select karein.
+Left menu me: App settings > Environment variables.
+Manage variables par click karein aur add karein:
+Key: AMAZON_SCRAPER_API_URL
+Value: https://api.easytopick.in
+Save karein.
+Redeploy karein:
+Amplify console me Run build button daba dein (ya GitHub par push aane se auto-build ho jayega).
+Build 2-3 minute me pass ho jayegi.
+✅ Step 7: Final Test
+Ab https://dashboard.easytopick.in/products kholein:
+
+Import from Amazon par click karein.
+Koi bhi Amazon URL ya ASIN dalein (e.g., 1847941834).
+Extract Products par click karein.
+Pura product data (Title, Price, MRP, Details aur High-res Images) turant load ho jayega!
+Koi Unexpected token 'T' error nahi aayega!
+Zaroori Commands (Kisi bhi din check karne ke liye):
+Logs dekhne ke liye: pm2 logs amazon-scraper
+Restart karne ke liye: pm2 restart amazon-scraper
+Status dekhne ke liye: pm2 status
