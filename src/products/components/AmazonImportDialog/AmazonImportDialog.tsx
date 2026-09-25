@@ -1,5 +1,5 @@
+import { gql, useApolloClient } from "@apollo/client";
 import { type ChannelData } from "@dashboard/channels/utils";
-import { getAmazonScraperApiUrl } from "@dashboard/config";
 import { Box, Button, Text } from "@saleor/macaw-ui-next";
 import {
   AlertCircle,
@@ -22,11 +22,42 @@ import slugify from "slugify";
 import { useAmazonPublish } from "../../hooks/useAmazonPublish";
 import styles from "./AmazonImportDialog.module.css";
 import { ImageEditorModal } from "./ImageEditorModal";
-import {
-  type EditableAmazonProduct,
-  type ExtractedAmazonProduct,
-  type ExtractResponse,
-} from "./types";
+import { type EditableAmazonProduct, type ExtractedAmazonProduct } from "./types";
+
+const AMAZON_PRODUCT_EXTRACT_MUTATION = gql`
+  mutation AmazonProductExtract($urls: [String!]!) {
+    amazonProductExtract(urls: $urls) {
+      success
+      products {
+        asin
+        url
+        title
+        author
+        publisher
+        publicationDate
+        publicationYear
+        itemWeight
+        dimensions
+        language
+        sellingPrice
+        mrp
+        description
+        specs
+        images
+        primaryImage
+      }
+      extractionErrors {
+        url
+        message
+      }
+      errors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
 
 export interface NamedNode {
   id: string;
@@ -67,6 +98,8 @@ export const AmazonImportDialog = ({
   const [editingImageUrl, setEditingImageUrl] = useState("");
   const [editingImageIndex, setEditingImageIndex] = useState(-1);
 
+  const apolloClient = useApolloClient();
+
   const { publishProduct, publishing } = useAmazonPublish();
 
   // Reset state when opened/closed
@@ -81,7 +114,7 @@ export const AmazonImportDialog = ({
     }
   }, [open]);
 
-  // Handle URL / ASIN Extraction
+  // Handle URL / ASIN Extraction via GraphQL
   const handleExtract = async () => {
     const rawUrls = urlInput
       .split(/[\n,]/)
@@ -98,50 +131,18 @@ export const AmazonImportDialog = ({
     setExtractError(null);
 
     try {
-      const scraperBase = getAmazonScraperApiUrl();
-      const extractEndpoint = scraperBase
-        ? `${scraperBase}/api/amazon-extract`
-        : "/api/amazon-extract";
+      const result = await apolloClient.mutate({
+        mutation: AMAZON_PRODUCT_EXTRACT_MUTATION,
+        variables: { urls: rawUrls },
+        fetchPolicy: "no-cache",
+      });
 
-      let response: Response;
+      const data = result.data?.amazonProductExtract;
 
-      try {
-        response = await fetch(extractEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ urls: rawUrls }),
-        });
-      } catch (netErr: unknown) {
-        const netMsg = netErr instanceof Error ? netErr.message : "Network error";
-
-        setExtractError(`Cannot connect to Amazon scraper service (${extractEndpoint}): ${netMsg}`);
-        setExtracting(false);
-
-        return;
-      }
-
-      const contentType = response.headers.get("content-type") || "";
-
-      if (!contentType.includes("application/json")) {
-        const text = await response.text();
-        const snippet = text
-          .slice(0, 100)
-          .replace(/<[^>]+>/g, "")
-          .trim();
-
-        setExtractError(
-          `Scraper service endpoint returned non-JSON response (HTTP ${response.status}: ${snippet || "Endpoint not found"}).`,
-        );
-        setExtracting(false);
-
-        return;
-      }
-
-      const data: ExtractResponse = await response.json();
-
-      if (!data.success || !data.products || data.products.length === 0) {
+      if (!data?.success || !data?.products || data.products.length === 0) {
         const errorMsg =
-          data.errors?.[0]?.error ||
+          data?.extractionErrors?.[0]?.message ||
+          data?.errors?.[0]?.message ||
           "Could not extract product details. Please check the URL/ASIN.";
 
         setExtractError(errorMsg);
