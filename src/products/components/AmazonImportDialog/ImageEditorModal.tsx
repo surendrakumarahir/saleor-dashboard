@@ -1,3 +1,4 @@
+import { getAmazonScraperApiUrl } from "@dashboard/config";
 import { Box, Button, Text } from "@saleor/macaw-ui-next";
 import { Check, FlipHorizontal, FlipVertical, RotateCcw, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,12 +14,7 @@ interface ImageEditorModalProps {
 
 type AspectRatio = "original" | "1:1" | "3:4" | "4:3" | "16:9";
 
-export const ImageEditorModal = ({
-  open,
-  imageUrl,
-  onClose,
-  onSave,
-}: ImageEditorModalProps) => {
+export const ImageEditorModal = ({ open, imageUrl, onClose, onSave }: ImageEditorModalProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [loadingError, setLoadingError] = useState(false);
@@ -37,7 +33,13 @@ export const ImageEditorModal = ({
     if (!url || url.startsWith("data:") || url.startsWith("blob:")) {
       return url;
     }
-    return `/api/amazon-image-proxy?url=${encodeURIComponent(url)}`;
+
+    const scraperBase = getAmazonScraperApiUrl();
+    const proxyBase = scraperBase
+      ? `${scraperBase}/api/amazon-image-proxy`
+      : "/api/amazon-image-proxy";
+
+    return `${proxyBase}?url=${encodeURIComponent(url)}`;
   }, []);
 
   // Load image
@@ -58,6 +60,7 @@ export const ImageEditorModal = ({
 
     if (isDataOrBlob) {
       const img = new Image();
+
       img.onload = () => {
         originalImgRef.current = img;
         setImageLoaded(true);
@@ -66,11 +69,13 @@ export const ImageEditorModal = ({
         setLoadingError(true);
       };
       img.src = imageUrl;
+
       return;
     }
 
     // Remote URL: Use proxy with CORS
     const proxyImg = new Image();
+
     proxyImg.crossOrigin = "anonymous";
     proxyImg.onload = () => {
       originalImgRef.current = proxyImg;
@@ -79,6 +84,7 @@ export const ImageEditorModal = ({
     proxyImg.onerror = () => {
       // Try direct with crossOrigin
       const directCorsImg = new Image();
+
       directCorsImg.crossOrigin = "anonymous";
       directCorsImg.onload = () => {
         originalImgRef.current = directCorsImg;
@@ -87,6 +93,7 @@ export const ImageEditorModal = ({
       directCorsImg.onerror = () => {
         // Fallback to direct without crossOrigin
         const fallbackImg = new Image();
+
         fallbackImg.onload = () => {
           originalImgRef.current = fallbackImg;
           setImageLoaded(true);
@@ -106,9 +113,11 @@ export const ImageEditorModal = ({
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const img = originalImgRef.current;
+
     if (!canvas || !img || !imageLoaded) return;
 
     const ctx = canvas.getContext("2d");
+
     if (!ctx) return;
 
     let sourceX = 0;
@@ -121,6 +130,7 @@ export const ImageEditorModal = ({
     // Apply Aspect Ratio Crop calculation
     if (aspectRatio === "1:1") {
       const size = Math.min(sourceWidth, sourceHeight);
+
       sourceX = (sourceWidth - size) / 2;
       sourceY = (sourceHeight - size) / 2;
       sourceWidth = size;
@@ -128,36 +138,45 @@ export const ImageEditorModal = ({
     } else if (aspectRatio === "3:4") {
       const targetRatio = 3 / 4;
       const currentRatio = sourceWidth / sourceHeight;
+
       if (currentRatio > targetRatio) {
         const newWidth = sourceHeight * targetRatio;
+
         sourceX = (sourceWidth - newWidth) / 2;
         sourceWidth = newWidth;
       } else {
         const newHeight = sourceWidth / targetRatio;
+
         sourceY = (sourceHeight - newHeight) / 2;
         sourceHeight = newHeight;
       }
     } else if (aspectRatio === "4:3") {
       const targetRatio = 4 / 3;
       const currentRatio = sourceWidth / sourceHeight;
+
       if (currentRatio > targetRatio) {
         const newWidth = sourceHeight * targetRatio;
+
         sourceX = (sourceWidth - newWidth) / 2;
         sourceWidth = newWidth;
       } else {
         const newHeight = sourceWidth / targetRatio;
+
         sourceY = (sourceHeight - newHeight) / 2;
         sourceHeight = newHeight;
       }
     } else if (aspectRatio === "16:9") {
       const targetRatio = 16 / 9;
       const currentRatio = sourceWidth / sourceHeight;
+
       if (currentRatio > targetRatio) {
         const newWidth = sourceHeight * targetRatio;
+
         sourceX = (sourceWidth - newWidth) / 2;
         sourceWidth = newWidth;
       } else {
         const newHeight = sourceWidth / targetRatio;
+
         sourceY = (sourceHeight - newHeight) / 2;
         sourceHeight = newHeight;
       }
@@ -186,7 +205,7 @@ export const ImageEditorModal = ({
       -sourceWidth / 2,
       -sourceHeight / 2,
       sourceWidth,
-      sourceHeight
+      sourceHeight,
     );
 
     ctx.restore();
@@ -197,11 +216,11 @@ export const ImageEditorModal = ({
   }, [redrawCanvas]);
 
   const handleRotate = (deg: number) => {
-    setRotation((prev) => (prev + deg + 360) % 360);
+    setRotation(prev => (prev + deg + 360) % 360);
   };
 
-  const handleFlipH = () => setFlipH((prev) => !prev);
-  const handleFlipV = () => setFlipV((prev) => !prev);
+  const handleFlipH = () => setFlipH(prev => !prev);
+  const handleFlipV = () => setFlipV(prev => !prev);
 
   const handleReset = () => {
     setRotation(0);
@@ -215,9 +234,12 @@ export const ImageEditorModal = ({
 
   const handleApply = () => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
+
     try {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+
       onSave(dataUrl);
       onClose();
     } catch (e) {
@@ -231,7 +253,7 @@ export const ImageEditorModal = ({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose} role="dialog" aria-modal="true">
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <Box display="flex" flexDirection="column" gap={1}>
             <Text size={5} fontWeight="bold">
@@ -358,7 +380,7 @@ export const ImageEditorModal = ({
                   max="150"
                   value={brightness}
                   className={styles.slider}
-                  onChange={(e) => setBrightness(Number(e.target.value))}
+                  onChange={e => setBrightness(Number(e.target.value))}
                 />
               </div>
 
@@ -373,7 +395,7 @@ export const ImageEditorModal = ({
                   max="150"
                   value={contrast}
                   className={styles.slider}
-                  onChange={(e) => setContrast(Number(e.target.value))}
+                  onChange={e => setContrast(Number(e.target.value))}
                 />
               </div>
 
@@ -388,7 +410,7 @@ export const ImageEditorModal = ({
                   max="180"
                   value={saturation}
                   className={styles.slider}
-                  onChange={(e) => setSaturation(Number(e.target.value))}
+                  onChange={e => setSaturation(Number(e.target.value))}
                 />
               </div>
             </div>

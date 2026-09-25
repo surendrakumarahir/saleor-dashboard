@@ -1,4 +1,5 @@
 import { type ChannelData } from "@dashboard/channels/utils";
+import { getAmazonScraperApiUrl } from "@dashboard/config";
 import {
   type AttributeValueInput,
   type ProductCreateInput,
@@ -32,15 +33,20 @@ const CHANNEL_INR_ID = "Q2hhbm5lbDoz";
 
 function parseWeightToKg(weightStr: string): number | null {
   if (!weightStr) return null;
+
   const clean = weightStr.toLowerCase().trim();
   const numMatch = clean.match(/([\d.]+)/);
+
   if (!numMatch) return null;
+
   const num = parseFloat(numMatch[1]);
+
   if (isNaN(num)) return null;
 
   if (clean.includes("g") && !clean.includes("kg")) {
     return parseFloat((num / 1000).toFixed(3));
   }
+
   return num;
 }
 
@@ -50,17 +56,25 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
   const bstr = atob(arr[1]);
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
+
   while (n--) {
     u8arr[n] = bstr.charCodeAt(n);
   }
+
   return new File([u8arr], filename, { type: mime });
 }
 
 async function remoteUrlToFile(url: string, filename: string): Promise<File> {
-  const proxyUrl = `/api/amazon-image-proxy?url=${encodeURIComponent(url)}`;
+  const scraperBase = getAmazonScraperApiUrl();
+  const proxyBase = scraperBase
+    ? `${scraperBase}/api/amazon-image-proxy`
+    : "/api/amazon-image-proxy";
+  const proxyUrl = `${proxyBase}?url=${encodeURIComponent(url)}`;
   let res: Response | null = null;
+
   try {
     const proxyRes = await fetch(proxyUrl);
+
     if (proxyRes.ok) {
       res = proxyRes;
     }
@@ -71,6 +85,7 @@ async function remoteUrlToFile(url: string, filename: string): Promise<File> {
   if (!res || !res.ok) {
     try {
       const directRes = await fetch(url);
+
       if (directRes.ok) {
         res = directRes;
       }
@@ -84,11 +99,13 @@ async function remoteUrlToFile(url: string, filename: string): Promise<File> {
   }
 
   const blob = await res.blob();
+
   if (blob.size < 500) {
     throw new Error(`Downloaded image is invalid or empty (${blob.size} bytes)`);
   }
 
   const mimeType = blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg";
+
   return new File([blob], filename, { type: mimeType });
 }
 
@@ -105,7 +122,7 @@ export const useAmazonPublish = () => {
     async (
       product: EditableAmazonProduct,
       channels: ChannelData[],
-      defaultWarehouseId?: string
+      defaultWarehouseId?: string,
     ): Promise<PublishResult> => {
       try {
         const cleanName = product.name.trim();
@@ -117,7 +134,8 @@ export const useAmazonPublish = () => {
 
         if (product.description) {
           const paragraphs = product.description.split("\n\n").filter(Boolean);
-          paragraphs.forEach((p) => {
+
+          paragraphs.forEach(p => {
             blocks.push({
               type: "paragraph",
               data: {
@@ -129,17 +147,25 @@ export const useAmazonPublish = () => {
 
         // Add Specifications block
         const specsList: string[] = [];
+
         if (product.author) specsList.push(`<b>Author:</b> ${product.author}`);
+
         if (product.publisher) specsList.push(`<b>Publisher:</b> ${product.publisher}`);
+
         if (product.publicationDate || product.publicationYear) {
           specsList.push(
-            `<b>Publication Year:</b> ${product.publicationYear || product.publicationDate}`
+            `<b>Publication Year:</b> ${product.publicationYear || product.publicationDate}`,
           );
         }
+
         if (product.language) specsList.push(`<b>Language:</b> ${product.language}`);
+
         if (product.dimensions) specsList.push(`<b>Dimensions:</b> ${product.dimensions}`);
+
         if (product.itemWeight) specsList.push(`<b>Item Weight:</b> ${product.itemWeight}`);
+
         if (product.mrp) specsList.push(`<b>MRP:</b> ₹${product.mrp}`);
+
         if (product.asin) specsList.push(`<b>Amazon ASIN:</b> ${product.asin}`);
 
         if (specsList.length > 0) {
@@ -183,6 +209,7 @@ export const useAmazonPublish = () => {
         }
 
         const pubYear = (product.publicationYear || product.publicationDate || "").trim();
+
         if (pubYear) {
           attributes.push({
             id: PUBLICATION_YEAR_ATTRIBUTE_ID,
@@ -203,7 +230,7 @@ export const useAmazonPublish = () => {
           { key: "Amazon ASIN", value: product.asin || "" },
           { key: "Amazon URL", value: product.url || "" },
           { key: "Source", value: "Amazon Import" },
-        ].filter((m) => Boolean(m.value));
+        ].filter(m => Boolean(m.value));
 
         const parsedWeight = parseWeightToKg(product.itemWeight);
 
@@ -228,15 +255,17 @@ export const useAmazonPublish = () => {
         });
 
         const productErrors = createProductResult.data?.productCreate?.errors || [];
+
         if (productErrors.length > 0) {
           return {
             success: false,
             errors: productErrors,
-            errorMessage: productErrors.map((e) => e.message).join(", "),
+            errorMessage: productErrors.map(e => e.message).join(", "),
           };
         }
 
         const newProductId = createProductResult.data?.productCreate?.product?.id;
+
         if (!newProductId) {
           return {
             success: false,
@@ -246,17 +275,14 @@ export const useAmazonPublish = () => {
 
         // 2. Availability = Channel-INR ONLY
         // Find Channel-INR or use known CHANNEL_INR_ID
-        const inrChannel =
-          channels?.find(
-            (c) =>
-              c.id === CHANNEL_INR_ID ||
-              c.name?.toLowerCase().includes("inr") ||
-              c.currency?.toLowerCase() === "inr"
-          ) || { id: CHANNEL_INR_ID };
+        const inrChannel = channels?.find(
+          c =>
+            c.id === CHANNEL_INR_ID ||
+            c.name?.toLowerCase().includes("inr") ||
+            c.currency?.toLowerCase() === "inr",
+        ) || { id: CHANNEL_INR_ID };
 
-        const otherChannelIds = (channels || [])
-          .filter((c) => c.id !== inrChannel.id)
-          .map((c) => c.id);
+        const otherChannelIds = (channels || []).filter(c => c.id !== inrChannel.id).map(c => c.id);
 
         try {
           await updateProductChannels({
@@ -342,19 +368,18 @@ export const useAmazonPublish = () => {
 
         // Put primary / cover image first
         const primaryImg = product.primaryImage || selectedList[0];
-        const remainingImgs = selectedList.filter((img) => img !== primaryImg);
+        const remainingImgs = selectedList.filter(img => img !== primaryImg);
         const imagesToUpload = primaryImg ? [primaryImg, ...remainingImgs] : remainingImgs;
 
         for (let i = 0; i < imagesToUpload.length; i++) {
           const imgUrl = imagesToUpload[i];
           const isCover = i === 0;
           const filename = `${baseSlug}-${isCover ? "cover" : i + 1}.jpg`;
-          const altText = isCover
-            ? `${cleanName} - Cover Image`
-            : `${cleanName} - Image ${i + 1}`;
+          const altText = isCover ? `${cleanName} - Cover Image` : `${cleanName} - Image ${i + 1}`;
 
           try {
             let file: File;
+
             if (imgUrl.startsWith("data:")) {
               file = dataUrlToFile(imgUrl, filename);
             } else {
@@ -370,6 +395,7 @@ export const useAmazonPublish = () => {
             });
 
             const mediaErrors = mediaResult.data?.productMediaCreate?.errors || [];
+
             if (mediaErrors.length > 0) {
               console.warn(`Media upload warning for image ${i + 1}:`, mediaErrors);
             }
@@ -385,13 +411,14 @@ export const useAmazonPublish = () => {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : "An unexpected error occurred during import";
+
         return {
           success: false,
           errorMessage: message,
         };
       }
     },
-    [createMedia, createProduct, createVariant, updateProductChannels, updateVariantChannels]
+    [createMedia, createProduct, createVariant, updateProductChannels, updateVariantChannels],
   );
 
   return {
