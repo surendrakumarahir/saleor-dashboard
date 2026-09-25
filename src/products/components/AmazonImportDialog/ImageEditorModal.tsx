@@ -1,3 +1,4 @@
+import { getAmazonScraperApiUrl } from "@dashboard/config";
 import { Box, Button, Text } from "@saleor/macaw-ui-next";
 import { Check, FlipHorizontal, FlipVertical, RotateCcw, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,12 +14,7 @@ interface ImageEditorModalProps {
 
 type AspectRatio = "original" | "1:1" | "3:4" | "4:3" | "16:9";
 
-export const ImageEditorModal = ({
-  open,
-  imageUrl,
-  onClose,
-  onSave,
-}: ImageEditorModalProps) => {
+export const ImageEditorModal = ({ open, imageUrl, onClose, onSave }: ImageEditorModalProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [loadingError, setLoadingError] = useState(false);
@@ -38,12 +34,9 @@ export const ImageEditorModal = ({
       return url;
     }
 
-    const scraperBase =
-      (typeof process !== "undefined" && process.env?.AMAZON_SCRAPER_API_URL) ||
-      (typeof window !== "undefined" && (window as any).__AMAZON_SCRAPER_API_URL__) ||
-      "";
+    const scraperBase = getAmazonScraperApiUrl();
     const proxyBase = scraperBase
-      ? `${scraperBase.replace(/\/+$/, "")}/api/amazon-image-proxy`
+      ? `${scraperBase}/api/amazon-image-proxy`
       : "/api/amazon-image-proxy";
 
     return `${proxyBase}?url=${encodeURIComponent(url)}`;
@@ -212,7 +205,7 @@ export const ImageEditorModal = ({
       -sourceWidth / 2,
       -sourceHeight / 2,
       sourceWidth,
-      sourceHeight
+      sourceHeight,
     );
 
     ctx.restore();
@@ -223,11 +216,11 @@ export const ImageEditorModal = ({
   }, [redrawCanvas]);
 
   const handleRotate = (deg: number) => {
-    setRotation((prev) => (prev + deg + 360) % 360);
+    setRotation(prev => (prev + deg + 360) % 360);
   };
 
-  const handleFlipH = () => setFlipH((prev) => !prev);
-  const handleFlipV = () => setFlipV((prev) => !prev);
+  const handleFlipH = () => setFlipH(prev => !prev);
+  const handleFlipV = () => setFlipV(prev => !prev);
 
   const handleReset = () => {
     setRotation(0);
@@ -260,7 +253,7 @@ export const ImageEditorModal = ({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose} role="dialog" aria-modal="true">
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <Box display="flex" flexDirection="column" gap={1}>
             <Text size={5} fontWeight="bold">
@@ -387,7 +380,7 @@ export const ImageEditorModal = ({
                   max="150"
                   value={brightness}
                   className={styles.slider}
-                  onChange={(e) => setBrightness(Number(e.target.value))}
+                  onChange={e => setBrightness(Number(e.target.value))}
                 />
               </div>
 
@@ -402,7 +395,7 @@ export const ImageEditorModal = ({
                   max="150"
                   value={contrast}
                   className={styles.slider}
-                  onChange={(e) => setContrast(Number(e.target.value))}
+                  onChange={e => setContrast(Number(e.target.value))}
                 />
               </div>
 
@@ -417,7 +410,7 @@ export const ImageEditorModal = ({
                   max="180"
                   value={saturation}
                   className={styles.slider}
-                  onChange={(e) => setSaturation(Number(e.target.value))}
+                  onChange={e => setSaturation(Number(e.target.value))}
                 />
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { type ChannelData } from "@dashboard/channels/utils";
+import { getAmazonScraperApiUrl } from "@dashboard/config";
 import { Box, Button, Text } from "@saleor/macaw-ui-next";
 import {
   AlertCircle,
@@ -84,7 +85,7 @@ export const AmazonImportDialog = ({
   const handleExtract = async () => {
     const rawUrls = urlInput
       .split(/[\n,]/)
-      .map((u) => u.trim())
+      .map(u => u.trim())
       .filter(Boolean);
 
     if (rawUrls.length === 0) {
@@ -97,13 +98,9 @@ export const AmazonImportDialog = ({
     setExtractError(null);
 
     try {
-      const scraperBase =
-        (typeof process !== "undefined" && process.env?.AMAZON_SCRAPER_API_URL) ||
-        (typeof window !== "undefined" && (window as any).__AMAZON_SCRAPER_API_URL__) ||
-        "";
-
+      const scraperBase = getAmazonScraperApiUrl();
       const extractEndpoint = scraperBase
-        ? `${scraperBase.replace(/\/+$/, "")}/api/amazon-extract`
+        ? `${scraperBase}/api/amazon-extract`
         : "/api/amazon-extract";
 
       let response: Response;
@@ -117,9 +114,7 @@ export const AmazonImportDialog = ({
       } catch (netErr: unknown) {
         const netMsg = netErr instanceof Error ? netErr.message : "Network error";
 
-        setExtractError(
-          `Cannot connect to Amazon scraper service (${extractEndpoint}). Please ensure the scraper server is running: ${netMsg}`
-        );
+        setExtractError(`Cannot connect to Amazon scraper service (${extractEndpoint}): ${netMsg}`);
         setExtracting(false);
 
         return;
@@ -129,10 +124,13 @@ export const AmazonImportDialog = ({
 
       if (!contentType.includes("application/json")) {
         const text = await response.text();
-        const snippet = text.slice(0, 100).replace(/<[^>]+>/g, "").trim();
+        const snippet = text
+          .slice(0, 100)
+          .replace(/<[^>]+>/g, "")
+          .trim();
 
         setExtractError(
-          `Scraper service endpoint returned non-JSON response (HTTP ${response.status}: ${snippet || "Endpoint not found"}). In production, please configure the Amazon Scraper backend server (AMAZON_SCRAPER_API_URL).`
+          `Scraper service endpoint returned non-JSON response (HTTP ${response.status}: ${snippet || "Endpoint not found"}).`,
         );
         setExtracting(false);
 
@@ -143,7 +141,8 @@ export const AmazonImportDialog = ({
 
       if (!data.success || !data.products || data.products.length === 0) {
         const errorMsg =
-          data.errors?.[0]?.error || "Could not extract product details. Please check the URL/ASIN.";
+          data.errors?.[0]?.error ||
+          "Could not extract product details. Please check the URL/ASIN.";
 
         setExtractError(errorMsg);
         setExtracting(false);
@@ -153,15 +152,15 @@ export const AmazonImportDialog = ({
 
       // Default Product Type = Books
       const booksProductType =
-        productTypes.find((pt) => pt.name.toLowerCase() === "books") ||
-        productTypes.find((pt) => pt.id === BOOKS_PRODUCT_TYPE_ID) ||
+        productTypes.find(pt => pt.name.toLowerCase() === "books") ||
+        productTypes.find(pt => pt.id === BOOKS_PRODUCT_TYPE_ID) ||
         productTypes[0];
       const selectedProductTypeId = booksProductType?.id || BOOKS_PRODUCT_TYPE_ID;
 
       // Default Category = Books
       const booksCategory =
-        categories.find((c) => c.name.toLowerCase() === "books") ||
-        categories.find((c) => c.id === BOOKS_CATEGORY_ID) ||
+        categories.find(c => c.name.toLowerCase() === "books") ||
+        categories.find(c => c.id === BOOKS_CATEGORY_ID) ||
         categories[0];
       const selectedCategoryId = booksCategory?.id || BOOKS_CATEGORY_ID;
 
@@ -202,7 +201,7 @@ export const AmazonImportDialog = ({
             primaryImage: primaryImg,
             status: "idle",
           };
-        }
+        },
       );
 
       setProducts(editableList);
@@ -222,7 +221,7 @@ export const AmazonImportDialog = ({
   const updateActiveProduct = (field: keyof EditableAmazonProduct, value: unknown) => {
     if (!activeProduct) return;
 
-    setProducts((prev) => {
+    setProducts(prev => {
       const copy = [...prev];
 
       copy[activeTabIndex] = {
@@ -244,7 +243,7 @@ export const AmazonImportDialog = ({
     let newPrimary = activeProduct.primaryImage;
 
     if (isSelected) {
-      updated = current.filter((u) => u !== imgUrl);
+      updated = current.filter(u => u !== imgUrl);
 
       if (newPrimary === imgUrl) {
         newPrimary = updated[0] || "";
@@ -301,18 +300,20 @@ export const AmazonImportDialog = ({
     const originalUrl = activeProduct.images[editingImageIndex];
 
     const updatedImages = [...activeProduct.images];
+
     updatedImages[editingImageIndex] = editedDataUrl;
 
-    const updatedSelected = (activeProduct.selectedImages || []).map((u) =>
-      u === originalUrl ? editedDataUrl : u
+    const updatedSelected = (activeProduct.selectedImages || []).map(u =>
+      u === originalUrl ? editedDataUrl : u,
     );
+
     if (!updatedSelected.includes(editedDataUrl)) {
       updatedSelected.push(editedDataUrl);
     }
 
     const isPrimary = activeProduct.primaryImage === originalUrl;
 
-    setProducts((prev) => {
+    setProducts(prev => {
       const copy = [...prev];
 
       copy[activeTabIndex] = {
@@ -353,9 +354,7 @@ export const AmazonImportDialog = ({
   const [publishingAll, setPublishingAll] = useState(false);
 
   const updateProductById = (tempId: string, updates: Partial<EditableAmazonProduct>) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.tempId === tempId ? { ...p, ...updates } : p))
-    );
+    setProducts(prev => prev.map(p => (p.tempId === tempId ? { ...p, ...updates } : p)));
   };
 
   const handlePublishAll = async () => {
@@ -413,7 +412,7 @@ export const AmazonImportDialog = ({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose} role="dialog" aria-modal="true">
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.modalHeader}>
           <div className={styles.headerLeft}>
@@ -425,7 +424,8 @@ export const AmazonImportDialog = ({
                 Amazon 1-Click Product Importer
               </Text>
               <Text size={2} color="default2">
-                Auto-fills Books Product Type, Attributes (Author, Publisher, Year), Channel-INR & Kota India Stock (100)
+                Auto-fills Books Product Type, Attributes (Author, Publisher, Year), Channel-INR &
+                Kota India Stock (100)
               </Text>
             </Box>
           </div>
@@ -444,9 +444,7 @@ export const AmazonImportDialog = ({
                 return (
                   <div
                     key={prod.tempId}
-                    className={`${styles.productTab} ${
-                      isActive ? styles.productTabActive : ""
-                    }`}
+                    className={`${styles.productTab} ${isActive ? styles.productTabActive : ""}`}
                     onClick={() => setActiveTabIndex(idx)}
                     title={prod.name}
                   >
@@ -454,12 +452,8 @@ export const AmazonImportDialog = ({
                     <span className={styles.productTabTitle}>
                       {prod.name || `Product ${idx + 1}`}
                     </span>
-                    {prod.status === "success" && (
-                      <CheckCircle2 size={13} color="#166534" />
-                    )}
-                    {prod.status === "error" && (
-                      <AlertCircle size={13} color="#991b1b" />
-                    )}
+                    {prod.status === "success" && <CheckCircle2 size={13} color="#166534" />}
+                    {prod.status === "error" && <AlertCircle size={13} color="#991b1b" />}
                     {prod.status === "publishing" && (
                       <div
                         className={styles.loadingSpinner}
@@ -475,7 +469,7 @@ export const AmazonImportDialog = ({
               <button
                 type="button"
                 className={styles.tabNavBtn}
-                onClick={() => setActiveTabIndex((i) => Math.max(0, i - 1))}
+                onClick={() => setActiveTabIndex(i => Math.max(0, i - 1))}
                 disabled={activeTabIndex === 0}
                 title="Previous Product"
               >
@@ -487,9 +481,7 @@ export const AmazonImportDialog = ({
               <button
                 type="button"
                 className={styles.tabNavBtn}
-                onClick={() =>
-                  setActiveTabIndex((i) => Math.min(products.length - 1, i + 1))
-                }
+                onClick={() => setActiveTabIndex(i => Math.min(products.length - 1, i + 1))}
                 disabled={activeTabIndex === products.length - 1}
                 title="Next Product"
               >
@@ -510,9 +502,11 @@ export const AmazonImportDialog = ({
                   <span>How to Import Products from Amazon</span>
                 </div>
                 <Text size={2} color="default2">
-                  Paste Amazon product page links (e.g. <code>https://www.amazon.in/dp/B08SKDMSXZ</code>)
-                  or 10-character ASINs. The product will be created with:
-                  <b> Product Type = Books</b>, <b>Attributes = Author, Publisher, Publication year</b>,
+                  Paste Amazon product page links (e.g.{" "}
+                  <code>https://www.amazon.in/dp/B08SKDMSXZ</code>) or 10-character ASINs. The
+                  product will be created with:
+                  <b> Product Type = Books</b>,{" "}
+                  <b>Attributes = Author, Publisher, Publication year</b>,
                   <b> Availability = Channel-INR</b>, <b>Warehouse = Kota India (Qty: 100)</b>, and
                   <b> 1 Cover Image</b>.
                 </Text>
@@ -524,7 +518,7 @@ export const AmazonImportDialog = ({
                   className={styles.urlTextarea}
                   placeholder={`https://www.amazon.in/dp/B08SKDMSXZ\nB08SKDMSXZ`}
                   value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
+                  onChange={e => setUrlInput(e.target.value)}
                   disabled={extracting}
                   rows={5}
                 />
@@ -687,7 +681,7 @@ export const AmazonImportDialog = ({
                     type="text"
                     className={styles.inputField}
                     value={activeProduct?.name || ""}
-                    onChange={(e) => updateActiveProduct("name", e.target.value)}
+                    onChange={e => updateActiveProduct("name", e.target.value)}
                   />
                 </div>
 
@@ -698,7 +692,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.slug || ""}
-                      onChange={(e) => updateActiveProduct("slug", e.target.value)}
+                      onChange={e => updateActiveProduct("slug", e.target.value)}
                     />
                   </div>
 
@@ -708,7 +702,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.sku || ""}
-                      onChange={(e) => updateActiveProduct("sku", e.target.value)}
+                      onChange={e => updateActiveProduct("sku", e.target.value)}
                     />
                   </div>
 
@@ -717,12 +711,12 @@ export const AmazonImportDialog = ({
                     <select
                       className={styles.selectField}
                       value={activeProduct?.productTypeId || BOOKS_PRODUCT_TYPE_ID}
-                      onChange={(e) => updateActiveProduct("productTypeId", e.target.value)}
+                      onChange={e => updateActiveProduct("productTypeId", e.target.value)}
                     >
                       <option value={BOOKS_PRODUCT_TYPE_ID}>Books</option>
                       {productTypes
-                        .filter((pt) => pt.id !== BOOKS_PRODUCT_TYPE_ID)
-                        .map((pt) => (
+                        .filter(pt => pt.id !== BOOKS_PRODUCT_TYPE_ID)
+                        .map(pt => (
                           <option key={pt.id} value={pt.id}>
                             {pt.name}
                           </option>
@@ -736,12 +730,12 @@ export const AmazonImportDialog = ({
                   <select
                     className={styles.selectField}
                     value={activeProduct?.categoryId || BOOKS_CATEGORY_ID}
-                    onChange={(e) => updateActiveProduct("categoryId", e.target.value)}
+                    onChange={e => updateActiveProduct("categoryId", e.target.value)}
                   >
                     <option value={BOOKS_CATEGORY_ID}>Books</option>
                     {categories
-                      .filter((c) => c.id !== BOOKS_CATEGORY_ID)
-                      .map((c) => (
+                      .filter(c => c.id !== BOOKS_CATEGORY_ID)
+                      .map(c => (
                         <option key={c.id} value={c.id}>
                           {c.name}
                         </option>
@@ -771,7 +765,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.author || ""}
-                      onChange={(e) => updateActiveProduct("author", e.target.value)}
+                      onChange={e => updateActiveProduct("author", e.target.value)}
                       placeholder="e.g. P.D Pathak"
                     />
                   </div>
@@ -782,7 +776,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.publisher || ""}
-                      onChange={(e) => updateActiveProduct("publisher", e.target.value)}
+                      onChange={e => updateActiveProduct("publisher", e.target.value)}
                       placeholder="e.g. Shri Vinod Pustak Mandir"
                     />
                   </div>
@@ -793,7 +787,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.publicationYear || activeProduct?.publicationDate || ""}
-                      onChange={(e) => {
+                      onChange={e => {
                         updateActiveProduct("publicationYear", e.target.value);
                         updateActiveProduct("publicationDate", e.target.value);
                       }}
@@ -809,7 +803,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.language || ""}
-                      onChange={(e) => updateActiveProduct("language", e.target.value)}
+                      onChange={e => updateActiveProduct("language", e.target.value)}
                       placeholder="e.g. Hindi, English"
                     />
                   </div>
@@ -820,7 +814,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.itemWeight || ""}
-                      onChange={(e) => updateActiveProduct("itemWeight", e.target.value)}
+                      onChange={e => updateActiveProduct("itemWeight", e.target.value)}
                       placeholder="e.g. 460 g"
                     />
                   </div>
@@ -831,7 +825,7 @@ export const AmazonImportDialog = ({
                       type="text"
                       className={styles.inputField}
                       value={activeProduct?.dimensions || ""}
-                      onChange={(e) => updateActiveProduct("dimensions", e.target.value)}
+                      onChange={e => updateActiveProduct("dimensions", e.target.value)}
                       placeholder="e.g. 20.7 x 2.6 x 13.5 cm"
                     />
                   </div>
@@ -857,7 +851,7 @@ export const AmazonImportDialog = ({
                       step="0.01"
                       className={styles.inputField}
                       value={activeProduct?.sellingPrice || ""}
-                      onChange={(e) => updateActiveProduct("sellingPrice", e.target.value)}
+                      onChange={e => updateActiveProduct("sellingPrice", e.target.value)}
                     />
                   </div>
 
@@ -868,7 +862,7 @@ export const AmazonImportDialog = ({
                       step="0.01"
                       className={styles.inputField}
                       value={activeProduct?.mrp || ""}
-                      onChange={(e) => updateActiveProduct("mrp", e.target.value)}
+                      onChange={e => updateActiveProduct("mrp", e.target.value)}
                     />
                   </div>
                 </div>
@@ -887,7 +881,7 @@ export const AmazonImportDialog = ({
                     className={styles.inputField}
                     rows={5}
                     value={activeProduct?.description || ""}
-                    onChange={(e) => updateActiveProduct("description", e.target.value)}
+                    onChange={e => updateActiveProduct("description", e.target.value)}
                     placeholder="Product description and key bullet points..."
                     style={{ resize: "vertical", fontFamily: "inherit" }}
                   />
@@ -923,7 +917,8 @@ export const AmazonImportDialog = ({
                   </Box>
                 </div>
                 <Text size={2} color="default2">
-                  Select one or more images to import. The <b>Cover</b> image will be the main display image on the website.
+                  Select one or more images to import. The <b>Cover</b> image will be the main
+                  display image on the website.
                 </Text>
 
                 <div className={styles.imageGrid}>
@@ -938,8 +933,8 @@ export const AmazonImportDialog = ({
                           isCover
                             ? styles.imageCardCover
                             : isSelected
-                            ? styles.imageCardSelected
-                            : ""
+                              ? styles.imageCardSelected
+                              : ""
                         }`}
                         style={{
                           cursor: "pointer",
@@ -952,11 +947,11 @@ export const AmazonImportDialog = ({
                           type="checkbox"
                           className={styles.selectCheckbox}
                           checked={isSelected}
-                          onChange={(e) => {
+                          onChange={e => {
                             e.stopPropagation();
                             toggleImageSelection(imgUrl);
                           }}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={e => e.stopPropagation()}
                           title={isSelected ? "Deselect image" : "Select image"}
                         />
 
@@ -969,10 +964,7 @@ export const AmazonImportDialog = ({
                           />
                         </div>
 
-                        <div
-                          className={styles.imageActions}
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className={styles.imageActions} onClick={e => e.stopPropagation()}>
                           <button
                             type="button"
                             className={styles.editButton}
@@ -1045,9 +1037,7 @@ export const AmazonImportDialog = ({
                     variant="secondary"
                     onClick={handlePublishAll}
                     disabled={
-                      publishing ||
-                      publishingAll ||
-                      products.every((p) => p.status === "success")
+                      publishing || publishingAll || products.every(p => p.status === "success")
                     }
                   >
                     {publishingAll ? (
@@ -1058,8 +1048,7 @@ export const AmazonImportDialog = ({
                     ) : (
                       <>
                         <Layers size={15} />
-                        Publish All (
-                        {products.filter((p) => p.status !== "success").length})
+                        Publish All ({products.filter(p => p.status !== "success").length})
                       </>
                     )}
                   </Button>
@@ -1068,13 +1057,9 @@ export const AmazonImportDialog = ({
                 <Button
                   variant="primary"
                   onClick={handlePublishActive}
-                  disabled={
-                    publishing || publishingAll || activeProduct?.status === "publishing"
-                  }
+                  disabled={publishing || publishingAll || activeProduct?.status === "publishing"}
                 >
-                  {publishing ||
-                  publishingAll ||
-                  activeProduct?.status === "publishing" ? (
+                  {publishing || publishingAll || activeProduct?.status === "publishing" ? (
                     <>
                       <div className={styles.loadingSpinner} />
                       Publishing to Store...
@@ -1088,9 +1073,7 @@ export const AmazonImportDialog = ({
                     <>
                       <Sparkles size={16} />
                       Import & Publish Product{" "}
-                      {products.length > 1
-                        ? `(${activeTabIndex + 1}/${products.length})`
-                        : ""}
+                      {products.length > 1 ? `(${activeTabIndex + 1}/${products.length})` : ""}
                     </>
                   )}
                 </Button>

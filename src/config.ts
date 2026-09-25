@@ -29,6 +29,30 @@ export const getApiUrl = () => window.__SALEOR_CONFIG__.API_URL;
  * If the config is relative (e.g., /graphql/), it will be resolved against the Dashboard origin.
  */
 export const getAbsoluteApiUrl = () => new URL(getApiUrl(), window.location.origin).href;
+
+export const getAmazonScraperApiUrl = () => {
+  if (process.env.AMAZON_SCRAPER_API_URL) {
+    return process.env.AMAZON_SCRAPER_API_URL.replace(/\/+$/, "");
+  }
+
+  if (typeof window !== "undefined" && (window as any).__AMAZON_SCRAPER_API_URL__) {
+    return ((window as any).__AMAZON_SCRAPER_API_URL__ as string).replace(/\/+$/, "");
+  }
+
+  try {
+    const apiUrl = getApiUrl();
+
+    if (apiUrl) {
+      const url = new URL(apiUrl, window.location.origin);
+
+      return url.origin;
+    }
+  } catch {
+    // fallback
+  }
+
+  return "";
+};
 export const SW_INTERVAL = parseInt(process.env.SW_INTERVAL ?? "300", 10);
 export const IS_CLOUD_INSTANCE = window.__SALEOR_CONFIG__.IS_CLOUD_INSTANCE === "true";
 

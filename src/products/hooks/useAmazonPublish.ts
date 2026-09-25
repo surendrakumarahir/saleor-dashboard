@@ -1,4 +1,5 @@
 import { type ChannelData } from "@dashboard/channels/utils";
+import { getAmazonScraperApiUrl } from "@dashboard/config";
 import {
   type AttributeValueInput,
   type ProductCreateInput,
@@ -64,12 +65,9 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
 }
 
 async function remoteUrlToFile(url: string, filename: string): Promise<File> {
-  const scraperBase =
-    (typeof process !== "undefined" && process.env?.AMAZON_SCRAPER_API_URL) ||
-    (typeof window !== "undefined" && (window as any).__AMAZON_SCRAPER_API_URL__) ||
-    "";
+  const scraperBase = getAmazonScraperApiUrl();
   const proxyBase = scraperBase
-    ? `${scraperBase.replace(/\/+$/, "")}/api/amazon-image-proxy`
+    ? `${scraperBase}/api/amazon-image-proxy`
     : "/api/amazon-image-proxy";
   const proxyUrl = `${proxyBase}?url=${encodeURIComponent(url)}`;
   let res: Response | null = null;
@@ -124,7 +122,7 @@ export const useAmazonPublish = () => {
     async (
       product: EditableAmazonProduct,
       channels: ChannelData[],
-      defaultWarehouseId?: string
+      defaultWarehouseId?: string,
     ): Promise<PublishResult> => {
       try {
         const cleanName = product.name.trim();
@@ -137,7 +135,7 @@ export const useAmazonPublish = () => {
         if (product.description) {
           const paragraphs = product.description.split("\n\n").filter(Boolean);
 
-          paragraphs.forEach((p) => {
+          paragraphs.forEach(p => {
             blocks.push({
               type: "paragraph",
               data: {
@@ -156,7 +154,7 @@ export const useAmazonPublish = () => {
 
         if (product.publicationDate || product.publicationYear) {
           specsList.push(
-            `<b>Publication Year:</b> ${product.publicationYear || product.publicationDate}`
+            `<b>Publication Year:</b> ${product.publicationYear || product.publicationDate}`,
           );
         }
 
@@ -232,7 +230,7 @@ export const useAmazonPublish = () => {
           { key: "Amazon ASIN", value: product.asin || "" },
           { key: "Amazon URL", value: product.url || "" },
           { key: "Source", value: "Amazon Import" },
-        ].filter((m) => Boolean(m.value));
+        ].filter(m => Boolean(m.value));
 
         const parsedWeight = parseWeightToKg(product.itemWeight);
 
@@ -262,7 +260,7 @@ export const useAmazonPublish = () => {
           return {
             success: false,
             errors: productErrors,
-            errorMessage: productErrors.map((e) => e.message).join(", "),
+            errorMessage: productErrors.map(e => e.message).join(", "),
           };
         }
 
@@ -277,17 +275,14 @@ export const useAmazonPublish = () => {
 
         // 2. Availability = Channel-INR ONLY
         // Find Channel-INR or use known CHANNEL_INR_ID
-        const inrChannel =
-          channels?.find(
-            (c) =>
-              c.id === CHANNEL_INR_ID ||
-              c.name?.toLowerCase().includes("inr") ||
-              c.currency?.toLowerCase() === "inr"
-          ) || { id: CHANNEL_INR_ID };
+        const inrChannel = channels?.find(
+          c =>
+            c.id === CHANNEL_INR_ID ||
+            c.name?.toLowerCase().includes("inr") ||
+            c.currency?.toLowerCase() === "inr",
+        ) || { id: CHANNEL_INR_ID };
 
-        const otherChannelIds = (channels || [])
-          .filter((c) => c.id !== inrChannel.id)
-          .map((c) => c.id);
+        const otherChannelIds = (channels || []).filter(c => c.id !== inrChannel.id).map(c => c.id);
 
         try {
           await updateProductChannels({
@@ -373,16 +368,14 @@ export const useAmazonPublish = () => {
 
         // Put primary / cover image first
         const primaryImg = product.primaryImage || selectedList[0];
-        const remainingImgs = selectedList.filter((img) => img !== primaryImg);
+        const remainingImgs = selectedList.filter(img => img !== primaryImg);
         const imagesToUpload = primaryImg ? [primaryImg, ...remainingImgs] : remainingImgs;
 
         for (let i = 0; i < imagesToUpload.length; i++) {
           const imgUrl = imagesToUpload[i];
           const isCover = i === 0;
           const filename = `${baseSlug}-${isCover ? "cover" : i + 1}.jpg`;
-          const altText = isCover
-            ? `${cleanName} - Cover Image`
-            : `${cleanName} - Image ${i + 1}`;
+          const altText = isCover ? `${cleanName} - Cover Image` : `${cleanName} - Image ${i + 1}`;
 
           try {
             let file: File;
@@ -425,7 +418,7 @@ export const useAmazonPublish = () => {
         };
       }
     },
-    [createMedia, createProduct, createVariant, updateProductChannels, updateVariantChannels]
+    [createMedia, createProduct, createVariant, updateProductChannels, updateVariantChannels],
   );
 
   return {
