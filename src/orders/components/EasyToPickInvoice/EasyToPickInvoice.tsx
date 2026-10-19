@@ -1,8 +1,8 @@
-import React from "react";
+import type React from "react";
 
 import styles from "./EasyToPickInvoice.module.css";
 import { EASYTOPICK_LOGO_DATA_URI } from "./logoDataUri";
-import { EasyToPickInvoiceData } from "./types";
+import { type EasyToPickInvoiceData } from "./types";
 import { formatMoneyValue } from "./utils";
 
 interface EasyToPickInvoiceProps {

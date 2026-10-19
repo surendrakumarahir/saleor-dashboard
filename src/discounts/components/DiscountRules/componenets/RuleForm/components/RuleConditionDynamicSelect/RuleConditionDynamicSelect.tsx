@@ -6,6 +6,8 @@ import { type Option } from "@saleor/macaw-ui-next";
 import { useController, useFormContext } from "react-hook-form";
 import { FormattedMessage } from "react-intl";
 
+import styles from "./RuleConditionDynamicSelect.module.css";
+
 interface RuleConditionDynamicSelectProps {
   condition: Condition;
   conditionIndex: number;
@@ -30,23 +32,29 @@ export const RuleConditionDynamicSelect = ({
 
   if (fetchProps) {
     const { fetch, options, fetchMoreProps } = fetchProps;
+    const isProduct = condition.id === "product";
 
     return (
-      <Multiselect
-        size="medium"
-        data-test-id={`condition-value-${conditionIndex}`}
-        value={condition.value as Option[]}
-        fetchOptions={fetch}
-        fetchMore={fetchMoreProps}
-        options={options ?? []}
-        onChange={valuesField.onChange}
-        onBlur={valuesField.onBlur}
-        disabled={disabled}
+      <div
+        className={`${styles.selectWrapper} ${isProduct ? styles.productSelectWrapper : ""}`}
+        style={{ width: "100%" }}
       >
-        <Multiselect.NoOptions size={3} padding={1}>
-          <FormattedMessage defaultMessage="No options to select" id="xTyg+p" />
-        </Multiselect.NoOptions>
-      </Multiselect>
+        <Multiselect
+          size="medium"
+          data-test-id={`condition-value-${conditionIndex}`}
+          value={condition.value as Option[]}
+          fetchOptions={fetch}
+          fetchMore={fetchMoreProps}
+          options={options ?? []}
+          onChange={valuesField.onChange}
+          onBlur={valuesField.onBlur}
+          disabled={disabled}
+        >
+          <Multiselect.NoOptions size={3} padding={1}>
+            <FormattedMessage defaultMessage="No options to select" id="xTyg+p" />
+          </Multiselect.NoOptions>
+        </Multiselect>
+      </div>
     );
   }
 

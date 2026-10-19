@@ -119,6 +119,38 @@ export function getRuleConditionsOptionsDetailsMap(
   }, {});
 }
 
+export function getRuleConditionsOptionsThumbnailsMap(
+  data: RuleConditionsSelectedOptionsDetailsQuery | undefined,
+): Record<string, string> {
+  if (!data) {
+    return {};
+  }
+
+  const thumbnailsMap: Record<string, string> = {};
+
+  if (data.products) {
+    const products = mapEdgesToItems(data.products) ?? [];
+
+    products.forEach(p => {
+      if (p.thumbnail?.url) {
+        thumbnailsMap[p.id] = p.thumbnail.url;
+      }
+    });
+  }
+
+  if (data.productVariants) {
+    const variants = mapEdgesToItems(data.productVariants) ?? [];
+
+    variants.forEach(v => {
+      if (v.product?.thumbnail?.url) {
+        thumbnailsMap[v.id] = v.product.thumbnail.url;
+      }
+    });
+  }
+
+  return thumbnailsMap;
+}
+
 function whenNoCondtionsIds(conditionsOptionsIdsToFetch: AllConditionsIds) {
   return Object.values(conditionsOptionsIdsToFetch).every(ids => ids.length === 0);
 }

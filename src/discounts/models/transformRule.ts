@@ -21,6 +21,7 @@ export const mapAPIRuleToForm = (
   rule: PromotionRuleDetailsFragment,
   labelMaps: {
     conditionsValues: Record<string, string>;
+    conditionsThumbnails?: Record<string, string>;
     gifts: Record<string, string>;
   },
 ): Rule => {
@@ -38,6 +39,7 @@ export const mapAPIRuleToForm = (
     const catalogueConditions = prepareCatalogueRuleConditions(
       rule.cataloguePredicate,
       labelMaps.conditionsValues,
+      labelMaps.conditionsThumbnails,
     );
 
     return {

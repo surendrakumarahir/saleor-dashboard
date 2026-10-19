@@ -39,7 +39,7 @@ function fetchUrl(targetUrl, timeoutMs = 15000, maxRedirects = 5) {
         timeout: timeoutMs,
       };
 
-      const req = client.get(options, (res) => {
+      const req = client.get(options, res => {
         // Handle Redirects
         if (
           res.statusCode &&
@@ -79,11 +79,11 @@ function fetchUrl(targetUrl, timeoutMs = 15000, maxRedirects = 5) {
 
         let data = "";
         stream.setEncoding("utf-8");
-        stream.on("data", (chunk) => {
+        stream.on("data", chunk => {
           data += chunk;
         });
         stream.on("end", () => resolve({ html: data, finalUrl: targetUrl }));
-        stream.on("error", (err) => reject(err));
+        stream.on("error", err => reject(err));
       });
 
       req.on("error", reject);
@@ -128,7 +128,9 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   }
 
   if (!asin) {
-    const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="[^"]*\/dp\/([A-Z0-9]{10})"/i);
+    const canonicalMatch = html.match(
+      /<link\s+rel="canonical"\s+href="[^"]*\/dp\/([A-Z0-9]{10})"/i,
+    );
     if (canonicalMatch) {
       asin = canonicalMatch[1].toUpperCase();
     }
@@ -178,7 +180,7 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   if (!sellingPrice) {
     const offscreenPrice =
       html.match(
-        /class="a-price\s+aok-align-center[^"]*"[^>]*>[\s\S]*?<span class="a-offscreen">([^<]+)<\/span>/i
+        /class="a-price\s+aok-align-center[^"]*"[^>]*>[\s\S]*?<span class="a-offscreen">([^<]+)<\/span>/i,
       ) ||
       html.match(/<span class="a-price"[^>]*>[\s\S]*?<span class="a-offscreen">([^<]+)<\/span>/i) ||
       html.match(/id="priceblock_ourprice"[^>]*>([^<]+)<\/span>/i) ||
@@ -194,7 +196,7 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   let mrp = "";
   const mrpMatch =
     html.match(
-      /class="a-price\s+a-text-price[^"]*"[^>]*>[\s\S]*?<span class="a-offscreen">([^<]+)<\/span>/i
+      /class="a-price\s+a-text-price[^"]*"[^>]*>[\s\S]*?<span class="a-offscreen">([^<]+)<\/span>/i,
     ) ||
     html.match(/data-a-strike="true"[^>]*><span[^>]*>([^<]+)<\/span>/i) ||
     html.match(/<span class="a-text-strike"[^>]*>([^<]+)<\/span>/i) ||
@@ -227,12 +229,18 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   if (bulletsDiv) {
     const liMatches = [
       ...bulletsDiv[1].matchAll(
-        /<span class="a-text-bold">([^<:]+)\s*:[^<]*<\/span>\s*<span>([\s\S]*?)<\/span>/g
+        /<span class="a-text-bold">([^<:]+)\s*:[^<]*<\/span>\s*<span>([\s\S]*?)<\/span>/g,
       ),
     ];
-    liMatches.forEach((m) => {
-      const k = decodeHtml(m[1]).replace(/&rlm;/g, "").replace(/[\r\n\t]/g, "").trim();
-      const v = decodeHtml(m[2]).replace(/&rlm;/g, "").replace(/[\r\n\t]/g, "").trim();
+    liMatches.forEach(m => {
+      const k = decodeHtml(m[1])
+        .replace(/&rlm;/g, "")
+        .replace(/[\r\n\t]/g, "")
+        .trim();
+      const v = decodeHtml(m[2])
+        .replace(/&rlm;/g, "")
+        .replace(/[\r\n\t]/g, "")
+        .trim();
       if (k && v) specs[k] = v;
     });
   }
@@ -243,11 +251,9 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
     html.match(/id="prodDetails"[\s\S]*?<\/table>/i);
   if (prodDetailsTable) {
     const trMatches = [
-      ...prodDetailsTable[0].matchAll(
-        /<th[^>]*>([\s\S]*?)<\/th>\s*<td[^>]*>([\s\S]*?)<\/td>/g
-      ),
+      ...prodDetailsTable[0].matchAll(/<th[^>]*>([\s\S]*?)<\/th>\s*<td[^>]*>([\s\S]*?)<\/td>/g),
     ];
-    trMatches.forEach((m) => {
+    trMatches.forEach(m => {
       const k = decodeHtml(m[1].replace(/<[^>]+>/g, "")).trim();
       const v = decodeHtml(m[2].replace(/<[^>]+>/g, "")).trim();
       if (k && v && !specs[k]) specs[k] = v;
@@ -265,8 +271,7 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   }
 
   // Key spec extraction
-  const publisher =
-    specs["Publisher"] || specs["Manufacturer"] || specs["Brand"] || "";
+  const publisher = specs["Publisher"] || specs["Manufacturer"] || specs["Brand"] || "";
   const publicationDate =
     specs["Publication date"] || specs["Publication Date"] || specs["Date First Available"] || "";
   let publicationYear = "";
@@ -282,14 +287,14 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   // 7. Description
   let description = "";
   const bookDescExpander = html.match(
-    /data-a-expander-name="book_description_expander"[\s\S]*?<div[^>]*class="[^"]*a-expander-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i
+    /data-a-expander-name="book_description_expander"[\s\S]*?<div[^>]*class="[^"]*a-expander-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
   );
   if (bookDescExpander) {
     description = decodeHtml(
       bookDescExpander[1]
         .replace(/<br\s*\/?>/gi, "\n")
         .replace(/<\/p>/gi, "\n\n")
-        .replace(/<[^>]+>/g, "")
+        .replace(/<[^>]+>/g, ""),
     );
   }
 
@@ -300,7 +305,7 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
         prodDescMatch[1]
           .replace(/<br\s*\/?>/gi, "\n")
           .replace(/<\/p>/gi, "\n\n")
-          .replace(/<[^>]+>/g, "")
+          .replace(/<[^>]+>/g, ""),
       );
     }
   }
@@ -311,7 +316,7 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
       const bullets = [
         ...fbMatch[1].matchAll(/<span class="a-list-item"[^>]*>([\s\S]*?)<\/span>/gi),
       ]
-        .map((m) => decodeHtml(m[1].replace(/<[^>]+>/g, "")).trim())
+        .map(m => decodeHtml(m[1].replace(/<[^>]+>/g, "")).trim())
         .filter(Boolean);
       description = bullets.join("\n\n");
     }
@@ -321,13 +326,11 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   const images = new Set();
 
   // Color Images JSON
-  const colorImagesMatch = html.match(
-    /'colorImages':\s*\{\s*'initial':\s*(\[[\s\S]*?\])\s*\},/
-  );
+  const colorImagesMatch = html.match(/'colorImages':\s*\{\s*'initial':\s*(\[[\s\S]*?\])\s*\},/);
   if (colorImagesMatch) {
     try {
       const parsed = JSON.parse(colorImagesMatch[1]);
-      parsed.forEach((item) => {
+      parsed.forEach(item => {
         if (item.hiRes) images.add(item.hiRes);
         else if (item.large) images.add(item.large);
         else if (item.main && Object.keys(item.main).length) {
@@ -342,10 +345,10 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
 
   // data-a-dynamic-image
   const dynamicMatches = [...html.matchAll(/data-a-dynamic-image="([^"]+)"/g)];
-  dynamicMatches.forEach((m) => {
+  dynamicMatches.forEach(m => {
     try {
       const parsed = JSON.parse(decodeHtml(m[1]));
-      Object.keys(parsed).forEach((imgUrl) => {
+      Object.keys(parsed).forEach(imgUrl => {
         if (imgUrl && imgUrl.startsWith("http")) images.add(imgUrl);
       });
     } catch {
@@ -354,10 +357,10 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   });
 
   // HiRes & Large regex
-  const hiResMatches = [...html.matchAll(/"hiRes"\s*:\s*"([^"]+)"/g)].map((m) => m[1]);
-  hiResMatches.forEach((url) => images.add(url));
-  const largeMatches = [...html.matchAll(/"large"\s*:\s*"([^"]+)"/g)].map((m) => m[1]);
-  largeMatches.forEach((url) => images.add(url));
+  const hiResMatches = [...html.matchAll(/"hiRes"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
+  hiResMatches.forEach(url => images.add(url));
+  const largeMatches = [...html.matchAll(/"large"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
+  largeMatches.forEach(url => images.add(url));
 
   // Landing image
   const landingImageMatch =
@@ -372,14 +375,14 @@ export function extractAmazonProduct(html, sourceUrl, finalUrl = "") {
   // Convert to high-resolution SL1500 images
   const imageList = Array.from(images)
     .filter(
-      (u) =>
+      u =>
         u &&
         u.startsWith("http") &&
         !u.includes("sprite") &&
         !u.includes("transparent-pixel") &&
-        !u.includes("play-button")
+        !u.includes("play-button"),
     )
-    .map((u) => u.replace(/\._[A-Z0-9_,]+_\./i, "._SL1500_."));
+    .map(u => u.replace(/\._[A-Z0-9_,]+_\./i, "._SL1500_."));
 
   const uniqueImages = Array.from(new Set(imageList));
 
@@ -428,7 +431,7 @@ function proxyImageRequest(imageUrl, clientRes, req, res, redirectHops = 3) {
           Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         },
       },
-      (upstreamRes) => {
+      upstreamRes => {
         // Handle CDN 301/302 redirects
         if (
           upstreamRes.statusCode &&
@@ -449,10 +452,10 @@ function proxyImageRequest(imageUrl, clientRes, req, res, redirectHops = 3) {
         }
         res.setHeader("Cache-Control", "public, max-age=86400, immutable");
         upstreamRes.pipe(res);
-      }
+      },
     );
 
-    clientReq.on("error", (err) => {
+    clientReq.on("error", err => {
       console.error("Proxy image error:", err);
       if (!res.headersSent) {
         res.statusCode = 502;
@@ -490,7 +493,7 @@ export function amazonScraperPlugin() {
         }
 
         let body = "";
-        req.on("data", (chunk) => {
+        req.on("data", chunk => {
           body += chunk;
         });
 
@@ -501,13 +504,13 @@ export function amazonScraperPlugin() {
             const rawUrls = Array.isArray(parsed.urls)
               ? parsed.urls
               : parsed.url
-              ? [parsed.url]
-              : [];
+                ? [parsed.url]
+                : [];
 
             const cleanUrls = rawUrls
-              .map((u) => (typeof u === "string" ? u.trim() : ""))
+              .map(u => (typeof u === "string" ? u.trim() : ""))
               .filter(Boolean)
-              .map((u) => {
+              .map(u => {
                 // If user just pasted ASIN like B08SKDMSXZ, convert to amazon.in URL
                 if (/^[A-Z0-9]{10}$/i.test(u)) {
                   return `https://www.amazon.in/dp/${u.toUpperCase()}`;
@@ -544,7 +547,7 @@ export function amazonScraperPlugin() {
                 success: results.length > 0,
                 products: results,
                 errors,
-              })
+              }),
             );
           } catch (e) {
             console.error("Amazon extract error:", e);
@@ -552,7 +555,7 @@ export function amazonScraperPlugin() {
             res.end(
               JSON.stringify({
                 error: e instanceof Error ? e.message : "Internal Server Error",
-              })
+              }),
             );
           }
         });

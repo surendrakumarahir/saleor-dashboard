@@ -3,6 +3,7 @@ import { type ReactNode } from "react";
 
 import {
   getRuleConditionsOptionsDetailsMap,
+  getRuleConditionsOptionsThumbnailsMap,
   useFetchConditionsOptionsDetails,
 } from "../hooks/useFetchConditionsOptionsDetails";
 import { useFetchGiftLables } from "../hooks/useFetchGiftLables";
@@ -19,10 +20,14 @@ export const LabelsMapsProvider = ({ children, promotionData }: LabelsMapsProovi
   const ruleConditionsOptionsDetailsMap = getRuleConditionsOptionsDetailsMap(
     ruleConditionsOptionsDetails,
   );
+  const ruleConditionsOptionsThumbnailsMap = getRuleConditionsOptionsThumbnailsMap(
+    ruleConditionsOptionsDetails,
+  );
   const { giftsLabels, loading: giftsLabelsLoading } = useFetchGiftLables(promotionData);
   const contextValue = {
     ruleConditionsValues: {
       labels: ruleConditionsOptionsDetailsMap,
+      thumbnails: ruleConditionsOptionsThumbnailsMap,
       loading: ruleConditionsOptionsDetailsLoading,
     },
     gifts: {

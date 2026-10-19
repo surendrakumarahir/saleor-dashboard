@@ -1,0 +1,19 @@
+.selectWrapper :global([data-test-id^="selected-option-"]) {
+  max-width: 200px;
+  overflow: hidden;
+}
+
+.selectWrapper :global([data-test-id^="selected-option-"] > span:first-child) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productSelectWrapper :global([data-test-id^="selected-option-"]) {
+  display: none !important;
+}
+
+.productSelectWrapper input {
+  min-width: 200px;
+}
+
