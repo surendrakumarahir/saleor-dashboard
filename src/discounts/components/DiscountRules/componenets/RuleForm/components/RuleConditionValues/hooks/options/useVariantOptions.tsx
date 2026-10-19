@@ -4,6 +4,8 @@ import { getSearchFetchMoreProps } from "@dashboard/hooks/makeTopLevelSearch/uti
 import { useVariantWithProductDataSearch } from "@dashboard/searches/useVariantSearch";
 import { mapEdgesToItems } from "@dashboard/utils/maps";
 
+import { ProductThumbnail } from "../../../ProductThumbnail";
+
 export const useVariantOptions = (channel: string | null, conditionId: string | null) => {
   const {
     loadMore: loadMoreVariants,
@@ -28,6 +30,8 @@ export const useVariantOptions = (channel: string | null, conditionId: string | 
       ({ name, id, product }) => ({
         label: `${product.name} - ${name}`,
         value: id,
+        thumbnail: product.thumbnail?.url,
+        startAdornment: <ProductThumbnail url={product.thumbnail?.url} alt={name} size={28} />,
       }),
     ),
   };

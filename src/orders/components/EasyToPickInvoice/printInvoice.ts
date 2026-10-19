@@ -1,5 +1,5 @@
 import { EASYTOPICK_LOGO_DATA_URI } from "./logoDataUri";
-import { EasyToPickInvoiceData } from "./types";
+import { type EasyToPickInvoiceData } from "./types";
 import { formatMoneyValue } from "./utils";
 
 export const generateInvoiceHtml = (data: EasyToPickInvoiceData): string => {
@@ -8,6 +8,7 @@ export const generateInvoiceHtml = (data: EasyToPickInvoiceData): string => {
   const rowsHtml = data.items
     .map((item, index) => {
       const rowBg = index % 2 === 0 ? "#ffffff" : "#f7f9fa";
+
       return `
       <tr style="background-color: ${rowBg};">
         <td style="padding: 8px 10px; border: 1px solid #e2e8f0; text-align: center; font-weight: 600;">${item.qty}</td>

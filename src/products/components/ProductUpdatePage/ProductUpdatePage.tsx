@@ -453,7 +453,7 @@ const ProductUpdatePage = ({
                       ? [
                           {
                             label: intl.formatMessage({
-                              id: '/G08qR',
+                              id: "/G08qR",
                               defaultMessage: "Duplicate product",
                               description: "duplicate product menu item",
                             }),

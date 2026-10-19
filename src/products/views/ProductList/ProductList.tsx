@@ -97,7 +97,7 @@ const ProductList = ({ params }: ProductListProps) => {
     },
   });
   const [loadProductDetails, { data: duplicateProductDetailsData, loading: loadingDuplicateProduct }] =
-    useProductDetailsLazyQuery();
+  useProductDetailsLazyQuery();
 
   const handleProductDuplicate = (id: string) => {
     setDuplicateProductId(id);
@@ -470,7 +470,7 @@ const ProductList = ({ params }: ProductListProps) => {
             status: "success",
             text: intl.formatMessage({
               defaultMessage: "Product imported from Amazon successfully!",
-              id: "amazonImportSuccessNotification",
+              id: 'Bmji6a',
             }),
           });
         }}

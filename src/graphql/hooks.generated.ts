@@ -8501,6 +8501,9 @@ export const RuleConditionsSelectedOptionsDetailsDocument = gql`
       node {
         id
         name
+        thumbnail {
+          url
+        }
       }
     }
   }
@@ -8511,6 +8514,9 @@ export const RuleConditionsSelectedOptionsDetailsDocument = gql`
         name
         product {
           name
+          thumbnail {
+            url
+          }
         }
       }
     }

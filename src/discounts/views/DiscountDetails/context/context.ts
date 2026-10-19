@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 interface LabelsData {
   loading: boolean;
   labels: Record<string, string>;
+  thumbnails?: Record<string, string>;
 }
 
 export const labelsMapsContext = createContext<{

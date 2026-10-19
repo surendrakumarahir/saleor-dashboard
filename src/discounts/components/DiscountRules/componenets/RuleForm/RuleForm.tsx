@@ -80,9 +80,9 @@ export const RuleForm = <ErrorCode,>({ errors, openPlayground }: RuleFormProps<E
 
   return (
     <RichTextContext.Provider value={richText}>
-      <Box width="100%" __minHeight={515} __maxHeight="75vh" overflowY="auto">
+      <Box width="100%" __minHeight={560} __maxHeight="80vh" overflowY="auto">
         <Box display="flex" flexDirection="column" gap={4} marginTop={4}>
-          <Box display="grid" __gridTemplateColumns="315px 1fr" gap={2}>
+          <Box display="grid" __gridTemplateColumns="1fr 1fr" gap={4}>
             <RuleInputWrapper>
               <Input
                 {...nameField}

@@ -8,11 +8,12 @@ import {
 import { type CommonError } from "@dashboard/utils/errors/common";
 import { useEffect, useState } from "react";
 
-import { getCurrentConditionsValuesLabels } from "../utils";
+import { getCurrentConditionsValuesLabels, getCurrentConditionsValuesThumbnails } from "../utils";
 
 interface UseRulesHandlersProps {
   data: PromotionDetailsFragment | undefined | null;
   ruleConditionsOptionsDetailsMap: Record<string, string>;
+  ruleConditionsOptionsThumbnailsMap?: Record<string, string>;
   giftsOptionsDetailsMap: Record<string, string>;
   onRuleUpdateSubmit: (data: Rule) => Promise<Array<CommonError<PromotionRuleUpdateErrorFragment>>>;
   onRuleCreateSubmit: (data: Rule) => Promise<Array<CommonError<PromotionRuleCreateErrorFragment>>>;
@@ -22,6 +23,7 @@ interface UseRulesHandlersProps {
 export const useRulesHandlers = ({
   data,
   ruleConditionsOptionsDetailsMap,
+  ruleConditionsOptionsThumbnailsMap,
   giftsOptionsDetailsMap,
   onRuleUpdateSubmit,
   onRuleCreateSubmit,
@@ -31,10 +33,14 @@ export const useRulesHandlers = ({
   const [conditionValuesLabelMap, setConditionValuesLabelMap] = useState<Record<string, string>>(
     {},
   );
+  const [conditionValuesThumbnailMap, setConditionValuesThumbnailMap] = useState<
+    Record<string, string>
+  >({});
   const rules = sortRules(
     data?.rules?.map(rule =>
       mapAPIRuleToForm(data?.type, rule, {
         conditionsValues: conditionValuesLabelMap,
+        conditionsThumbnails: conditionValuesThumbnailMap,
         gifts: giftsOptionsDetailsMap,
       }),
     ) ?? [],
@@ -49,10 +55,23 @@ export const useRulesHandlers = ({
     });
   }, [ruleConditionsOptionsDetailsMap]);
 
+  useEffect(() => {
+    if (ruleConditionsOptionsThumbnailsMap) {
+      setConditionValuesThumbnailMap(prev => ({
+        ...ruleConditionsOptionsThumbnailsMap,
+        ...prev,
+      }));
+    }
+  }, [ruleConditionsOptionsThumbnailsMap]);
+
   const updateLabels = (rule: Rule) => {
     setConditionValuesLabelMap(labels => ({
       ...labels,
       ...getCurrentConditionsValuesLabels([rule]),
+    }));
+    setConditionValuesThumbnailMap(prev => ({
+      ...prev,
+      ...getCurrentConditionsValuesThumbnails([rule]),
     }));
   };
   const onRuleSubmit = async (rule: Rule, ruleEditIndex: number | null) => {

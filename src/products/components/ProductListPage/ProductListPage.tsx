@@ -193,14 +193,13 @@ const ProductListPage = (props: ProductListPageProps) => {
               ]}
             />
             {onAmazonImport && (
-              <Button
-                variant="secondary"
-                data-test-id="amazon-import"
-                onClick={onAmazonImport}
-              >
+              <Button 
+              variant="secondary" 
+              data-test-id="amazon-import"
+              onClick={onAmazonImport}>
                 <Sparkles size={16} />
                 <FormattedMessage
-                  id="amazonImportButton"
+                  id="XtQ/dy"
                   defaultMessage="Import from Amazon"
                   description="button"
                 />

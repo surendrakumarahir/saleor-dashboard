@@ -4,6 +4,8 @@ import { getSearchFetchMoreProps } from "@dashboard/hooks/makeTopLevelSearch/uti
 import useProductSearch from "@dashboard/searches/useProductSearch";
 import { mapEdgesToItems } from "@dashboard/utils/maps";
 
+import { ProductThumbnail } from "../../../ProductThumbnail";
+
 export const useProductOptions = (channel: string | null, conditionId: string | null) => {
   const {
     loadMore: loadMoreProducts,
@@ -24,9 +26,13 @@ export const useProductOptions = (channel: string | null, conditionId: string | 
   return {
     fetch: searchProducts,
     fetchMoreProps: fetchMoreProducts,
-    options: (mapEdgesToItems(searchProductsOpts?.data?.search) ?? []).map(({ name, id }) => ({
-      label: name,
-      value: id,
-    })),
+    options: (mapEdgesToItems(searchProductsOpts?.data?.search) ?? []).map(
+      ({ name, id, thumbnail }) => ({
+        label: name,
+        value: id,
+        thumbnail: thumbnail?.url,
+        startAdornment: <ProductThumbnail url={thumbnail?.url} alt={name} size={28} />,
+      }),
+    ),
   };
 };
