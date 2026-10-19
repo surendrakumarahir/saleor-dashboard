@@ -28,7 +28,7 @@ function fetchUrl(targetUrl, timeoutMs = 15000) {
         timeout: timeoutMs,
       };
 
-      const req = client.get(options, (res) => {
+      const req = client.get(options, res => {
         if (
           res.statusCode &&
           res.statusCode >= 300 &&
@@ -44,7 +44,7 @@ function fetchUrl(targetUrl, timeoutMs = 15000) {
 
         let data = "";
         res.setEncoding("utf-8");
-        res.on("data", (chunk) => {
+        res.on("data", chunk => {
           data += chunk;
         });
         res.on("end", () => resolve(data));
@@ -76,7 +76,7 @@ const server = http.createServer(async (req, res) => {
   // POST /api/amazon-extract
   if (req.url === "/api/amazon-extract" && req.method === "POST") {
     let body = "";
-    req.on("data", (chunk) => {
+    req.on("data", chunk => {
       body += chunk;
     });
 
@@ -84,16 +84,12 @@ const server = http.createServer(async (req, res) => {
       res.setHeader("Content-Type", "application/json");
       try {
         const parsed = JSON.parse(body || "{}");
-        const rawUrls = Array.isArray(parsed.urls)
-          ? parsed.urls
-          : parsed.url
-          ? [parsed.url]
-          : [];
+        const rawUrls = Array.isArray(parsed.urls) ? parsed.urls : parsed.url ? [parsed.url] : [];
 
         const cleanUrls = rawUrls
-          .map((u) => (typeof u === "string" ? u.trim() : ""))
+          .map(u => (typeof u === "string" ? u.trim() : ""))
           .filter(Boolean)
-          .map((u) => {
+          .map(u => {
             if (/^[A-Z0-9]{10}$/i.test(u)) {
               return `https://www.amazon.in/dp/${u.toUpperCase()}`;
             }
@@ -129,7 +125,7 @@ const server = http.createServer(async (req, res) => {
             success: true,
             products: results,
             errors,
-          })
+          }),
         );
       } catch (e) {
         console.error("Amazon extract error:", e);
@@ -137,7 +133,7 @@ const server = http.createServer(async (req, res) => {
         res.end(
           JSON.stringify({
             error: e instanceof Error ? e.message : "Internal Server Error",
-          })
+          }),
         );
       }
     });
@@ -176,7 +172,7 @@ const server = http.createServer(async (req, res) => {
             Referer: "https://www.amazon.in/",
           },
         },
-        (clientRes) => {
+        clientRes => {
           res.statusCode = clientRes.statusCode || 200;
           if (clientRes.headers["content-type"]) {
             res.setHeader("Content-Type", clientRes.headers["content-type"]);
@@ -185,10 +181,10 @@ const server = http.createServer(async (req, res) => {
             res.setHeader("Content-Length", clientRes.headers["content-length"]);
           }
           clientRes.pipe(res);
-        }
+        },
       );
 
-      clientReq.on("error", (err) => {
+      clientReq.on("error", err => {
         console.error("Proxy image error:", err);
         res.statusCode = 502;
         res.end("Error fetching image");

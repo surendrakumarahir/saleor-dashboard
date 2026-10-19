@@ -1,7 +1,8 @@
 import { DashboardModal } from "@dashboard/components/Modal";
 import { Box, Button } from "@saleor/macaw-ui-next";
 import { Download, Printer, X } from "lucide-react";
-import React, { useMemo } from "react";
+import type React from "react";
+import { useMemo } from "react";
 
 import { EasyToPickInvoice } from "./EasyToPickInvoice";
 import { generateInvoiceHtml, printEasyToPickInvoice } from "./printInvoice";
@@ -22,6 +23,7 @@ export const EasyToPickInvoiceModal: React.FC<EasyToPickInvoiceModalProps> = ({
 }) => {
   const invoiceData = useMemo(() => {
     if (!order) return null;
+
     return mapOrderToEasyToPickInvoice(order, selectedInvoiceId);
   }, [order, selectedInvoiceId]);
 
@@ -38,6 +40,7 @@ export const EasyToPickInvoiceModal: React.FC<EasyToPickInvoiceModalProps> = ({
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+
     a.href = url;
     a.download = `Invoice_${invoiceData.orderNumber || invoiceData.invoiceNumber}.html`;
     document.body.appendChild(a);

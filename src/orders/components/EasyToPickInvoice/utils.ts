@@ -1,4 +1,4 @@
-import { EasyToPickInvoiceData, EasyToPickInvoiceItem } from "./types";
+import { type EasyToPickInvoiceData, type EasyToPickInvoiceItem } from "./types";
 
 export const formatInvoiceDate = (dateString?: string | null): string => {
   if (!dateString) {
@@ -11,6 +11,7 @@ export const formatInvoiceDate = (dateString?: string | null): string => {
 
   try {
     const d = new Date(dateString);
+
     return new Intl.DateTimeFormat("en-GB", {
       day: "numeric",
       month: "long",

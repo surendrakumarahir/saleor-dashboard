@@ -278,7 +278,8 @@
 }
 
 @media (max-width: 768px) {
-  .grid2, .grid3 {
+  .grid2,
+  .grid3 {
     grid-template-columns: 1fr;
   }
 }

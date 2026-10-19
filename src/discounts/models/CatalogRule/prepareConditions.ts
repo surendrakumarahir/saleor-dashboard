@@ -5,19 +5,31 @@ import { type Condition, type ConditionType } from "../Condition";
 export function prepareCatalogueRuleConditions(
   cataloguePredicate: CataloguePredicateAPI,
   ruleConditionsOptionsDetailsMap: Record<string, string>,
+  ruleConditionsOptionsThumbnailsMap?: Record<string, string>,
 ): Condition[] {
-  const toOptions = createToOptionMap(ruleConditionsOptionsDetailsMap);
+  const toOptions = createToOptionMap(
+    ruleConditionsOptionsDetailsMap,
+    ruleConditionsOptionsThumbnailsMap,
+  );
 
   if (Array.isArray(cataloguePredicate)) {
     return cataloguePredicate.flatMap(predicate =>
-      prepareCatalogueRuleConditions(predicate, ruleConditionsOptionsDetailsMap),
+      prepareCatalogueRuleConditions(
+        predicate,
+        ruleConditionsOptionsDetailsMap,
+        ruleConditionsOptionsThumbnailsMap,
+      ),
     );
   }
 
   return Object.entries(cataloguePredicate)
     .flatMap(([key, value]) => {
       if (["OR", "AND"].includes(key)) {
-        return prepareCatalogueRuleConditions(value, ruleConditionsOptionsDetailsMap);
+        return prepareCatalogueRuleConditions(
+          value,
+          ruleConditionsOptionsDetailsMap,
+          ruleConditionsOptionsThumbnailsMap,
+        );
       }
 
       return {
@@ -29,9 +41,13 @@ export function prepareCatalogueRuleConditions(
     .filter(Boolean);
 }
 
-function createToOptionMap(ruleConditionsOptionsDetailsMap: Record<string, string>) {
+function createToOptionMap(
+  ruleConditionsOptionsDetailsMap: Record<string, string>,
+  ruleConditionsOptionsThumbnailsMap?: Record<string, string>,
+) {
   return (id: string) => ({
     label: ruleConditionsOptionsDetailsMap[id] || id,
     value: id,
+    thumbnail: ruleConditionsOptionsThumbnailsMap?.[id],
   });
 }

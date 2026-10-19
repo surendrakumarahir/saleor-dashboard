@@ -1,0 +1,73 @@
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: 10px;
+  background-color: var(--macaw-colors-background-default2, #f8f9fa);
+  border: 1px solid var(--macaw-colors-border-default1, #e6e8eb);
+}
+
+.productsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.productsList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.productsList::-webkit-scrollbar-thumb {
+  background-color: var(--macaw-colors-border-default1, #d1d5db);
+  border-radius: 3px;
+}
+
+.productCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: var(--macaw-colors-background-default1, #ffffff);
+  border: 1px solid var(--macaw-colors-border-default1, #e6e8eb);
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
+}
+
+.productCard:hover {
+  border-color: var(--macaw-colors-border-default1Hovered, #b0b5bd);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.itemIndex {
+  min-width: 24px;
+  user-select: none;
+}
+
+.productTitle {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--macaw-colors-text-default1, #111827);
+}
+
+.removeBtn {
+  border-radius: 6px;
+  transition: all 0.15s ease-in-out;
+}
+
+.removeBtn:hover {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+.clearAllBtn:hover {
+  color: #dc2626 !important;
+}
+

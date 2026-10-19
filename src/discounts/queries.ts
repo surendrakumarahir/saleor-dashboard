@@ -182,6 +182,9 @@ export const ruleConditionsSelectedOptionsDetails = gql`
         node {
           id
           name
+          thumbnail {
+            url
+          }
         }
       }
     }
@@ -193,6 +196,9 @@ export const ruleConditionsSelectedOptionsDetails = gql`
           name
           product {
             name
+            thumbnail {
+              url
+            }
           }
         }
       }

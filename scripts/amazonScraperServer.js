@@ -44,7 +44,7 @@ function fetchUrl(targetUrl, timeoutMs = 15000, maxRedirects = 5) {
         timeout: timeoutMs,
       };
 
-      const req = client.get(options, (res) => {
+      const req = client.get(options, res => {
         if (
           res.statusCode &&
           res.statusCode >= 300 &&
@@ -81,16 +81,16 @@ function fetchUrl(targetUrl, timeoutMs = 15000, maxRedirects = 5) {
         }
 
         const chunks = [];
-        stream.on("data", (chunk) => chunks.push(chunk));
+        stream.on("data", chunk => chunks.push(chunk));
         stream.on("end", () => {
           const buffer = Buffer.concat(chunks);
           const html = buffer.toString("utf-8");
           resolve({ html, finalUrl: targetUrl });
         });
-        stream.on("error", (err) => reject(err));
+        stream.on("error", err => reject(err));
       });
 
-      req.on("error", (err) => reject(err));
+      req.on("error", err => reject(err));
       req.on("timeout", () => {
         req.destroy();
         reject(new Error("Request timed out"));
@@ -126,7 +126,7 @@ function proxyImageRequest(imageUrl, fallbackUrl, req, res, maxRedirects = 5) {
       timeout: 10000,
     };
 
-    const imgReq = client.get(options, (imgRes) => {
+    const imgReq = client.get(options, imgRes => {
       if (
         imgRes.statusCode &&
         imgRes.statusCode >= 300 &&
@@ -154,15 +154,12 @@ function proxyImageRequest(imageUrl, fallbackUrl, req, res, maxRedirects = 5) {
       }
 
       res.statusCode = 200;
-      res.setHeader(
-        "Content-Type",
-        imgRes.headers["content-type"] || "image/jpeg"
-      );
+      res.setHeader("Content-Type", imgRes.headers["content-type"] || "image/jpeg");
       res.setHeader("Cache-Control", "public, max-age=86400");
       imgRes.pipe(res);
     });
 
-    imgReq.on("error", (err) => {
+    imgReq.on("error", err => {
       if (fallbackUrl && fallbackUrl !== imageUrl) {
         return proxyImageRequest(fallbackUrl, null, req, res, maxRedirects - 1);
       }
@@ -223,7 +220,9 @@ function extractAmazonProduct(html, originalUrl, finalUrl) {
   // Author
   let author = "";
   const authorMatch =
-    html.match(/<span[^>]*class=["'][^"']*author[^"']*["'][^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/i) ||
+    html.match(
+      /<span[^>]*class=["'][^"']*author[^"']*["'][^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/i,
+    ) ||
     html.match(/by\s+<a[^>]*class=["'][^"']*contributorNameID[^"']*["'][^>]*>([\s\S]*?)<\/a>/i) ||
     html.match(/<a[^>]*id=["']bylineContributor["'][^>]*>([\s\S]*?)<\/a>/i);
   if (authorMatch) {
@@ -235,7 +234,9 @@ function extractAmazonProduct(html, originalUrl, finalUrl) {
   let mrp = null;
 
   const priceWhole = html.match(/<span[^>]*class=["'][^"']*a-price-whole[^"']*["'][^>]*>([\d,]+)/i);
-  const priceFraction = html.match(/<span[^>]*class=["'][^"']*a-price-fraction[^"']*["'][^>]*>(\d+)/i);
+  const priceFraction = html.match(
+    /<span[^>]*class=["'][^"']*a-price-fraction[^"']*["'][^>]*>(\d+)/i,
+  );
   if (priceWhole) {
     const whole = priceWhole[1].replace(/,/g, "");
     const frac = priceFraction ? priceFraction[1] : "00";
@@ -243,15 +244,21 @@ function extractAmazonProduct(html, originalUrl, finalUrl) {
   }
 
   if (sellingPrice === null) {
-    const offscreen = html.match(/<span[^>]*class=["'][^"']*a-offscreen[^"']*["'][^>]*>₹?\s*([\d,]+(?:\.\d+)?)/i);
+    const offscreen = html.match(
+      /<span[^>]*class=["'][^"']*a-offscreen[^"']*["'][^>]*>₹?\s*([\d,]+(?:\.\d+)?)/i,
+    );
     if (offscreen) {
       sellingPrice = parseFloat(offscreen[1].replace(/,/g, ""));
     }
   }
 
   const basisMatch =
-    html.match(/<span[^>]*class=["'][^"']*a-price\s+a-text-price[^"']*["'][^>]*>[\s\S]*?<span[^>]*class=["'][^"']*a-offscreen[^"']*["'][^>]*>₹?\s*([\d,]+(?:\.\d+)?)/i) ||
-    html.match(/M\.R\.P\.:[\s\S]*?<span[^>]*class=["'][^"']*a-offscreen[^"']*["'][^>]*>₹?\s*([\d,]+(?:\.\d+)?)/i);
+    html.match(
+      /<span[^>]*class=["'][^"']*a-price\s+a-text-price[^"']*["'][^>]*>[\s\S]*?<span[^>]*class=["'][^"']*a-offscreen[^"']*["'][^>]*>₹?\s*([\d,]+(?:\.\d+)?)/i,
+    ) ||
+    html.match(
+      /M\.R\.P\.:[\s\S]*?<span[^>]*class=["'][^"']*a-offscreen[^"']*["'][^>]*>₹?\s*([\d,]+(?:\.\d+)?)/i,
+    );
   if (basisMatch) {
     mrp = parseFloat(basisMatch[1].replace(/,/g, ""));
   }
@@ -262,16 +269,24 @@ function extractAmazonProduct(html, originalUrl, finalUrl) {
 
   // Specs
   const specs = {};
-  const bulletMatches = html.matchAll(/<span[^>]*class=["'][^"']*a-list-item[^"']*["'][^>]*>[\s\S]*?<span[^>]*class=["'][^"']*a-text-bold[^"']*["'][^>]*>([\s\S]*?)<\/span>[\s\S]*?<span>([\s\S]*?)<\/span>/gi);
+  const bulletMatches = html.matchAll(
+    /<span[^>]*class=["'][^"']*a-list-item[^"']*["'][^>]*>[\s\S]*?<span[^>]*class=["'][^"']*a-text-bold[^"']*["'][^>]*>([\s\S]*?)<\/span>[\s\S]*?<span>([\s\S]*?)<\/span>/gi,
+  );
   for (const m of bulletMatches) {
-    const key = cleanText(m[1]).replace(/[:\u200E\u200F]/g, "").trim();
+    const key = cleanText(m[1])
+      .replace(/[:\u200E\u200F]/g, "")
+      .trim();
     const val = cleanText(m[2]).trim();
     if (key && val) specs[key] = val;
   }
 
-  const tableMatches = html.matchAll(/<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/gi);
+  const tableMatches = html.matchAll(
+    /<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/gi,
+  );
   for (const m of tableMatches) {
-    const key = cleanText(m[1]).replace(/[:\u200E\u200F]/g, "").trim();
+    const key = cleanText(m[1])
+      .replace(/[:\u200E\u200F]/g, "")
+      .trim();
     const val = cleanText(m[2]).trim();
     if (key && val) specs[key] = val;
   }
@@ -324,10 +339,10 @@ function extractAmazonProduct(html, originalUrl, finalUrl) {
   const cleanImages = [
     ...new Set(
       rawImages
-        .map((img) => {
+        .map(img => {
           return img.replace(/\._[A-Z0-9_]+_(\.[a-z]+)$/i, "._SL1500_$1");
         })
-        .filter((img) => img.startsWith("http") && !img.includes("transparent-pixel"))
+        .filter(img => img.startsWith("http") && !img.includes("transparent-pixel")),
     ),
   ];
 
@@ -377,7 +392,7 @@ const server = http.createServer(async (req, res) => {
         status: "ok",
         service: "Amazon Scraper Microservice",
         timestamp: new Date().toISOString(),
-      })
+      }),
     );
     return;
   }
@@ -397,14 +412,12 @@ const server = http.createServer(async (req, res) => {
   // POST /api/amazon-extract
   if (pathname === "/api/amazon-extract" && req.method === "POST") {
     let body = "";
-    req.on("data", (chunk) => (body += chunk));
+    req.on("data", chunk => (body += chunk));
     req.on("end", async () => {
       try {
         const payload = JSON.parse(body || "{}");
         const urls = payload.urls || [];
-        const cleanUrls = urls
-          .map((u) => normalizeAmazonUrl(u))
-          .filter((u) => u.startsWith("http"));
+        const cleanUrls = urls.map(u => normalizeAmazonUrl(u)).filter(u => u.startsWith("http"));
 
         if (cleanUrls.length === 0) {
           res.statusCode = 400;
@@ -437,7 +450,7 @@ const server = http.createServer(async (req, res) => {
             success: results.length > 0,
             products: results,
             errors,
-          })
+          }),
         );
       } catch (e) {
         res.statusCode = 500;
@@ -445,7 +458,7 @@ const server = http.createServer(async (req, res) => {
         res.end(
           JSON.stringify({
             error: e instanceof Error ? e.message : "Internal Server Error",
-          })
+          }),
         );
       }
     });
