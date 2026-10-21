@@ -25,8 +25,8 @@ import { ImageEditorModal } from "./ImageEditorModal";
 import { type EditableAmazonProduct, type ExtractedAmazonProduct } from "./types";
 
 const AMAZON_PRODUCT_EXTRACT_MUTATION = gql`
-  mutation AmazonProductExtract($urls: [String!]!) {
-    amazonProductExtract(urls: $urls) {
+  mutation AmazonProductExtract($urls: [String!]!, $rawHtml: String) {
+    amazonProductExtract(urls: $urls, rawHtml: $rawHtml) {
       success
       products {
         asin
@@ -88,6 +88,10 @@ export const AmazonImportDialog = ({
   categories = [],
 }: AmazonImportDialogProps) => {
   const [urlInput, setUrlInput] = useState("");
+  const [rawHtmlInput, setRawHtmlInput] = useState("");
+  const [showHtmlPaste, setShowHtmlPaste] = useState(false);
+  const [extensionDetected, setExtensionDetected] = useState(false);
+  const [companionDetected, setCompanionDetected] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
   const [products, setProducts] = useState<EditableAmazonProduct[]>([]);
@@ -106,6 +110,8 @@ export const AmazonImportDialog = ({
   useEffect(() => {
     if (!open) {
       setUrlInput("");
+      setRawHtmlInput("");
+      setShowHtmlPaste(false);
       setExtracting(false);
       setExtractError(null);
       setProducts([]);
@@ -114,6 +120,79 @@ export const AmazonImportDialog = ({
     }
   }, [open]);
 
+  // Check for Extension or Local Companion on open
+  useEffect(() => {
+    if (typeof window !== "undefined" && open) {
+      if ((window as any).__AMAZON_EXTENSION_ACTIVE__) {
+        setExtensionDetected(true);
+      }
+
+      const onMessage = (event: MessageEvent) => {
+        if (event.data?.type === "AMAZON_EXTENSION_READY") {
+          setExtensionDetected(true);
+        }
+      };
+
+      window.addEventListener("message", onMessage);
+
+      // Check local companion server (http://127.0.0.1:8765/health)
+      fetch("http://127.0.0.1:8765/health", { mode: "cors" })
+        .then(r => r.json())
+        .then(d => {
+          if (d?.status === "ok") setCompanionDetected(true);
+        })
+        .catch(() => {
+          // Local companion not active
+        });
+
+      return () => {
+        window.removeEventListener("message", onMessage);
+      };
+    }
+  }, [open]);
+
+  const fetchViaExtension = (targetUrl: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const requestId = `ext_req_${Date.now()}_${Math.random()}`;
+      const timer = setTimeout(() => {
+        window.removeEventListener("message", onExtMsg);
+        reject(new Error("Browser extension request timed out"));
+      }, 15000);
+
+      const onExtMsg = (event: MessageEvent) => {
+        if (
+          event.data &&
+          event.data.type === "AMAZON_EXTENSION_FETCH_RESPONSE" &&
+          event.data.requestId === requestId
+        ) {
+          clearTimeout(timer);
+          window.removeEventListener("message", onExtMsg);
+
+          if (event.data.error) {
+            reject(new Error(event.data.error));
+          } else {
+            resolve(event.data.html);
+          }
+        }
+      };
+
+      window.addEventListener("message", onExtMsg);
+      window.postMessage(
+        { type: "AMAZON_EXTENSION_FETCH_REQUEST", requestId, url: targetUrl },
+        "*",
+      );
+    });
+
+  const fetchViaLocalCompanion = async (targetUrl: string): Promise<string> => {
+    const resp = await fetch(`http://127.0.0.1:8765/?url=${encodeURIComponent(targetUrl)}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!resp.ok) throw new Error(`Local companion HTTP ${resp.status}`);
+
+    return await resp.text();
+  };
+
   // Handle URL / ASIN Extraction via GraphQL
   const handleExtract = async () => {
     const rawUrls = urlInput
@@ -121,7 +200,7 @@ export const AmazonImportDialog = ({
       .map(u => u.trim())
       .filter(Boolean);
 
-    if (rawUrls.length === 0) {
+    if (rawUrls.length === 0 && !rawHtmlInput.trim()) {
       setExtractError("Please enter at least one Amazon URL or ASIN");
 
       return;
@@ -130,10 +209,38 @@ export const AmazonImportDialog = ({
     setExtracting(true);
     setExtractError(null);
 
+    let fetchedHtml: string | undefined = rawHtmlInput.trim() || undefined;
+
+    // If only 1 URL and no manual HTML provided, try local extension or companion
+    if (!fetchedHtml && rawUrls.length === 1) {
+      const isExtActive =
+        extensionDetected ||
+        (typeof window !== "undefined" && (window as any).__AMAZON_EXTENSION_ACTIVE__ === true);
+
+      if (isExtActive) {
+        try {
+          fetchedHtml = await fetchViaExtension(rawUrls[0]);
+        } catch (e) {
+          console.warn("Extension fetch failed, falling back...", e);
+        }
+      }
+
+      if (!fetchedHtml && companionDetected) {
+        try {
+          fetchedHtml = await fetchViaLocalCompanion(rawUrls[0]);
+        } catch (e) {
+          console.warn("Companion fetch failed, falling back...", e);
+        }
+      }
+    }
+
     try {
       const result = await apolloClient.mutate({
         mutation: AMAZON_PRODUCT_EXTRACT_MUTATION,
-        variables: { urls: rawUrls },
+        variables: {
+          urls: rawUrls.length > 0 ? rawUrls : ["https://www.amazon.in"],
+          rawHtml: fetchedHtml,
+        },
         fetchPolicy: "no-cache",
       });
 
@@ -513,6 +620,31 @@ export const AmazonImportDialog = ({
                 </Text>
               </div>
 
+              {(extensionDetected || companionDetected) && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 12px",
+                    background: "#ecfdf5",
+                    border: "1px solid #a7f3d0",
+                    borderRadius: 6,
+                    color: "#065f46",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    marginBottom: 12,
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>⚡</span>
+                  <span>
+                    {extensionDetected
+                      ? "Chrome Extension Active: Fetching Amazon via your residential connection (zero CAPTCHAs)."
+                      : "Local Companion Bridge Active on port 8765."}
+                  </span>
+                </div>
+              )}
+
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel}>Amazon URLs or ASINs (One per line)</label>
                 <textarea
@@ -523,6 +655,39 @@ export const AmazonImportDialog = ({
                   disabled={extracting}
                   rows={5}
                 />
+              </div>
+
+              {showHtmlPaste && (
+                <div className={styles.fieldGroup} style={{ marginTop: 8 }}>
+                  <label className={styles.fieldLabel}>
+                    Raw Amazon Page HTML (Manual Fallback)
+                  </label>
+                  <textarea
+                    className={styles.urlTextarea}
+                    placeholder="Paste page source (Cmd+U or right-click 'View Page Source' on Amazon)..."
+                    value={rawHtmlInput}
+                    onChange={e => setRawHtmlInput(e.target.value)}
+                    disabled={extracting}
+                    rows={4}
+                  />
+                </div>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#2563eb",
+                    fontSize: 12,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                  onClick={() => setShowHtmlPaste(p => !p)}
+                >
+                  {showHtmlPaste ? "Hide Manual HTML Input" : "📋 Paste Amazon HTML directly"}
+                </button>
               </div>
 
               <div className={styles.quickActionRow}>
@@ -547,7 +712,7 @@ export const AmazonImportDialog = ({
                 <Button
                   variant="primary"
                   onClick={handleExtract}
-                  disabled={extracting || !urlInput.trim()}
+                  disabled={extracting || (!urlInput.trim() && !rawHtmlInput.trim())}
                 >
                   {extracting ? (
                     <>
