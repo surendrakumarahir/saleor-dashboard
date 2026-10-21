@@ -15,6 +15,9 @@ const config: CodegenConfig = {
     // banners module uses custom types not in main schema
     "!./src/banners/queries.ts",
     "!./src/banners/**/*.ts",
+    // blogs module uses custom types not in main schema
+    "!./src/blogs/queries.ts",
+    "!./src/blogs/**/*.ts",
   ],
   generates: {
     "./src/graphql/fragmentTypes.generated.ts": {
