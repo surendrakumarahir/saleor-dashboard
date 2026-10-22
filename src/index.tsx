@@ -28,6 +28,7 @@ import LoginLoading from "./auth/components/LoginLoading/LoginLoading";
 import SectionRoute from "./auth/components/SectionRoute";
 import { useAuthRedirection } from "./auth/hooks/useAuthRedirection";
 import { ImageCollectionsList } from "./banners/pages/ImageCollectionsList";
+import { blogSection } from "./blogs/urls";
 import { channelsSection } from "./channels/urls";
 import AppLayout from "./components/AppLayout";
 import useAppChannel, { AppChannelProvider } from "./components/AppLayout/AppChannelContext";
@@ -59,6 +60,7 @@ import { warehouseSection } from "./warehouses/urls";
 // Lazy-loaded page sections for code splitting
 const AttributeSection = lazy(() => import("./attributes"));
 const Auth = lazy(() => import("./auth"));
+const BlogSection = lazy(() => import("./blogs"));
 const CategorySection = lazy(() => import("./categories"));
 const ChannelsSection = lazy(() => import("./channels"));
 const CollectionSection = lazy(() => import("./collections"));
@@ -195,6 +197,8 @@ const Routes = () => {
                   <SectionRoute exact path="/" component={WelcomePage} />
                   {/* Banner Management Route */}
                   <SectionRoute permissions={[]} path="/banners" component={ImageCollectionsList} />
+                  {/* Blog Management Route */}
+                  <SectionRoute permissions={[]} path={blogSection} component={BlogSection} />
                   <SectionRoute
                     permissions={[
                       PermissionEnum.MANAGE_PRODUCTS,

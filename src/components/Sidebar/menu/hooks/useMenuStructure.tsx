@@ -1,5 +1,6 @@
 import { useUser } from "@dashboard/auth/useUser";
 import { bannerListPath } from "@dashboard/banners/urls";
+import { blogAuthorsPath, blogCategoriesPath, blogListPath } from "@dashboard/blogs/urls";
 import { categoryListUrl } from "@dashboard/categories/urls";
 import { collectionListUrl } from "@dashboard/collections/urls";
 import { iconSize } from "@dashboard/components/icons";
@@ -270,6 +271,27 @@ export function useMenuStructure() {
     {
       children: [
         {
+          label: "Blog Articles",
+          id: "blog-articles",
+          url: blogListPath,
+          permissions: [],
+          type: "item",
+        },
+        {
+          label: "Categories & Tags",
+          id: "blog-categories",
+          url: blogCategoriesPath,
+          permissions: [],
+          type: "item",
+        },
+        {
+          label: "Authors",
+          id: "blog-authors",
+          url: blogAuthorsPath,
+          permissions: [],
+          type: "item",
+        },
+        {
           label: "Image Collections",
           id: "image-collections",
           url: bannerListPath,
@@ -281,7 +303,7 @@ export function useMenuStructure() {
       label: "CMS",
       permissions: [],
       id: "cms",
-      url: bannerListPath,
+      url: blogListPath,
       type: "itemGroup",
     },
     {
