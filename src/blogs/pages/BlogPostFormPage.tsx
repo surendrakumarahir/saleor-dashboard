@@ -5,28 +5,22 @@ import {
   ArrowLeft,
   BookOpen,
   Calendar,
-  Check,
   CheckCircle,
-  Clock,
-  ExternalLink,
   Eye,
-  FileText,
-  Globe,
   History,
   Image as ImageIcon,
   Plus,
   RotateCcw,
   Save,
   Send,
-  Share2,
-  Sparkles,
   Trash2,
   UploadCloud,
   X,
 } from "lucide-react";
-import * as React from "react";
+import type * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useHistory, useParams } from "react-router";
+
 import {
   CREATE_BLOG_POST,
   GET_BLOG_AUTHORS,
@@ -34,13 +28,19 @@ import {
   GET_BLOG_POST,
   GET_BLOG_REVISIONS,
   GET_BLOG_TAGS,
-  PUBLISH_BLOG_POST,
   RESTORE_BLOG_REVISION,
   SCHEDULE_BLOG_POST,
   UPDATE_BLOG_POST,
   UPLOAD_BLOG_MEDIA,
 } from "../queries";
-import type { BlogAuthor, BlogCategory, BlogPost, BlogPostRevision, BlogTag, RecommendedBook } from "../types";
+import type {
+  BlogAuthor,
+  BlogCategory,
+  BlogPost,
+  BlogPostRevision,
+  BlogTag,
+  RecommendedBook,
+} from "../types";
 import { blogListPath } from "../urls";
 
 export const BlogPostFormPage: React.FC = () => {
@@ -101,7 +101,11 @@ export const BlogPostFormPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Queries
-  const { data: postData, loading: postLoading, refetch: refetchPost } = useQuery(GET_BLOG_POST, {
+  const {
+    data: postData,
+    loading: postLoading,
+    refetch: refetchPost,
+  } = useQuery(GET_BLOG_POST, {
     variables: { id: isEdit ? id : undefined },
     skip: !isEdit,
     fetchPolicy: "network-only",
@@ -127,7 +131,6 @@ export const BlogPostFormPage: React.FC = () => {
   // Mutations
   const [createPost, { loading: creating }] = useMutation(CREATE_BLOG_POST);
   const [updatePost, { loading: updating }] = useMutation(UPDATE_BLOG_POST);
-  const [publishPost, { loading: publishing }] = useMutation(PUBLISH_BLOG_POST);
   const [schedulePost, { loading: scheduling }] = useMutation(SCHEDULE_BLOG_POST);
   const [restoreRevision, { loading: restoring }] = useMutation(RESTORE_BLOG_REVISION);
   const [uploadMedia, { loading: uploadingImage }] = useMutation(UPLOAD_BLOG_MEDIA);
@@ -136,6 +139,7 @@ export const BlogPostFormPage: React.FC = () => {
   useEffect(() => {
     if (postData?.blogPost) {
       const p: BlogPost = postData.blogPost;
+
       setTitle(p.title || "");
       setSlug(p.slug || "");
       setIsSlugManual(true);
@@ -159,7 +163,7 @@ export const BlogPostFormPage: React.FC = () => {
       setOgImage(p.ogImage || "");
 
       if (Array.isArray(p.tags)) {
-        setSelectedTags(p.tags.map((t) => t.name));
+        setSelectedTags(p.tags.map(t => t.name));
       }
 
       if (Array.isArray(p.recommendedBooks)) {
@@ -171,6 +175,7 @@ export const BlogPostFormPage: React.FC = () => {
   // Auto-generate slug from title
   const handleTitleChange = (val: string) => {
     setTitle(val);
+
     if (!isSlugManual) {
       const generated = val
         .toLowerCase()
@@ -178,6 +183,7 @@ export const BlogPostFormPage: React.FC = () => {
         .replace(/[^\w\s-]/g, "")
         .replace(/[\s_-]+/g, "-")
         .replace(/^-+|-+$/g, "");
+
       setSlug(generated);
     }
   };
@@ -185,6 +191,7 @@ export const BlogPostFormPage: React.FC = () => {
   // Word count and reading time
   const wordCount = useMemo(() => {
     const plain = content.replace(/<[^>]*>/g, " ").trim();
+
     return plain ? plain.split(/\s+/).filter(Boolean).length : 0;
   }, [content]);
 
@@ -211,6 +218,7 @@ export const BlogPostFormPage: React.FC = () => {
   // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     try {
@@ -218,6 +226,7 @@ export const BlogPostFormPage: React.FC = () => {
         variables: { file, folder: "posts" },
       });
       const data = res.data?.uploadBlogMedia;
+
       if (data?.fileUrl) {
         setFeaturedImage(data.fileUrl);
         setSaveSuccessNotice("Image uploaded successfully!");
@@ -228,12 +237,17 @@ export const BlogPostFormPage: React.FC = () => {
     } catch (err: any) {
       console.error("Upload error:", err);
       setErrorMessage("Failed to upload image. Please try again.");
+    } finally {
+      if (e.target) {
+        e.target.value = "";
+      }
     }
   };
 
   // Handle Tag Addition
   const handleAddTag = () => {
     const trimmed = tagInput.trim();
+
     if (trimmed && !selectedTags.includes(trimmed)) {
       setSelectedTags([...selectedTags, trimmed]);
       setTagInput("");
@@ -241,12 +255,13 @@ export const BlogPostFormPage: React.FC = () => {
   };
 
   const handleRemoveTag = (tagName: string) => {
-    setSelectedTags(selectedTags.filter((t) => t !== tagName));
+    setSelectedTags(selectedTags.filter(t => t !== tagName));
   };
 
   // Handle Recommended Books
   const handleAddBook = () => {
     if (!newBook.title.trim()) return;
+
     setRecommendedBooks([...recommendedBooks, { ...newBook }]);
     setNewBook({
       title: "",
@@ -272,6 +287,7 @@ export const BlogPostFormPage: React.FC = () => {
 
     if (!title.trim()) {
       setErrorMessage("Please enter an article title.");
+
       return;
     }
 
@@ -286,7 +302,7 @@ export const BlogPostFormPage: React.FC = () => {
       status: postStatus,
       authorId: authorId || undefined,
       primaryCategoryId: primaryCategoryId || undefined,
-      featuredImage: featuredImage || undefined,
+      featuredImage: featuredImage !== undefined ? featuredImage || "" : undefined,
       featuredImageAlt: featuredImageAlt || undefined,
       featuredImageCaption: featuredImageCaption || undefined,
       isFeatured: isFeatured,
@@ -309,12 +325,29 @@ export const BlogPostFormPage: React.FC = () => {
           variables: { id, input: inputData },
         });
         const errors = res.data?.blogPostUpdate?.errors;
+
         if (errors && errors.length > 0) {
           setErrorMessage(errors[0].message);
+
           return;
         }
+
+        const updatedPost = res.data?.blogPostUpdate?.post;
+
+        if (updatedPost?.featuredImage !== undefined) {
+          setFeaturedImage(updatedPost.featuredImage || "");
+        }
+
         setStatus(postStatus);
-        setSaveSuccessNotice("Article saved successfully!");
+
+        const notice =
+          overrideStatus === "PUBLISHED"
+            ? "Article published live to storefront!"
+            : overrideStatus === "SCHEDULED"
+              ? "Article scheduled successfully!"
+              : "Article saved successfully!";
+
+        setSaveSuccessNotice(notice);
         refetchPost();
         refetchRevisions();
         setTimeout(() => setSaveSuccessNotice(null), 3500);
@@ -323,11 +356,15 @@ export const BlogPostFormPage: React.FC = () => {
           variables: { input: inputData },
         });
         const errors = res.data?.blogPostCreate?.errors;
+
         if (errors && errors.length > 0) {
           setErrorMessage(errors[0].message);
+
           return;
         }
+
         const newId = res.data?.blogPostCreate?.post?.id;
+
         if (newId) {
           history.push(`/blogs/${newId}`);
         } else {
@@ -341,45 +378,30 @@ export const BlogPostFormPage: React.FC = () => {
   };
 
   const handlePublishNow = async () => {
-    if (isEdit && id) {
-      try {
-        await publishPost({ variables: { id } });
-        setStatus("PUBLISHED");
-        setSaveSuccessNotice("Article published live to storefront!");
-        refetchPost();
-        setTimeout(() => setSaveSuccessNotice(null), 3500);
-      } catch (err: any) {
-        setErrorMessage(err.message || "Publish failed.");
-      }
-    } else {
-      await handleSave("PUBLISHED");
-    }
+    await handleSave("PUBLISHED");
   };
 
   const handleScheduleSubmit = async () => {
     if (!scheduledDate) return;
+
+    setScheduleModalOpen(false);
+    await handleSave("SCHEDULED");
+
     if (isEdit && id) {
       try {
         await schedulePost({
           variables: { id, scheduledAt: new Date(scheduledDate).toISOString() },
         });
-        setStatus("SCHEDULED");
-        setScheduleModalOpen(false);
-        setSaveSuccessNotice(`Article scheduled for ${new Date(scheduledDate).toLocaleString()}!`);
         refetchPost();
-        setTimeout(() => setSaveSuccessNotice(null), 3500);
       } catch (err: any) {
         setErrorMessage(err.message || "Schedule failed.");
       }
-    } else {
-      setStatus("SCHEDULED");
-      setScheduleModalOpen(false);
-      await handleSave("SCHEDULED");
     }
   };
 
   const handleRestoreRevision = async (revId: string) => {
     if (!id) return;
+
     try {
       await restoreRevision({ variables: { id, revisionId: revId } });
       setRevisionsModalOpen(false);
@@ -400,7 +422,7 @@ export const BlogPostFormPage: React.FC = () => {
     );
   }
 
-  const isSaving = creating || updating || publishing || scheduling;
+  const isSaving = creating || updating || scheduling;
 
   return (
     <div style={{ padding: "32px", maxWidth: "1400px", margin: "0 auto" }}>
@@ -591,7 +613,14 @@ export const BlogPostFormPage: React.FC = () => {
       )}
 
       {/* Two-Column Editor Layout: Main Content (8 cols) & Sidebar (4 cols) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "24px", alignItems: "start" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 340px",
+          gap: "24px",
+          alignItems: "start",
+        }}
+      >
         {/* Left Column: Article Body & SEO */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Card 1: Basic Information */}
@@ -610,14 +639,22 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Title */}
             <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 Article Title <span style={{ color: "#dc2626" }}>*</span>
               </label>
               <input
                 type="text"
                 placeholder="e.g. Complete Guide to NEET 2026: Recommended Books & Physics Strategy"
                 value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
+                onChange={e => handleTitleChange(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "10px 14px",
@@ -632,7 +669,16 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Slug */}
             <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 <span>Article URL Slug</span>
                 {isSlugManual && (
                   <span
@@ -663,7 +709,7 @@ export const BlogPostFormPage: React.FC = () => {
                 <input
                   type="text"
                   value={slug}
-                  onChange={(e) => {
+                  onChange={e => {
                     setIsSlugManual(true);
                     setSlug(e.target.value);
                   }}
@@ -681,14 +727,22 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Excerpt */}
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 Article Excerpt / Summary
               </label>
               <textarea
                 rows={3}
                 placeholder="Short hook and introduction summarizing key takeaways for students..."
                 value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
+                onChange={e => setExcerpt(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -712,7 +766,14 @@ export const BlogPostFormPage: React.FC = () => {
               boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "12px",
+              }}
+            >
               <Text size={4} fontWeight="bold">
                 Article Content
               </Text>
@@ -745,14 +806,17 @@ export const BlogPostFormPage: React.FC = () => {
                 { label: "H3", tag: "<h3>Subheading</h3>\n" },
                 { label: "Bold", tag: "<strong>Bold Text</strong>" },
                 { label: "Italic", tag: "<em>Italic Text</em>" },
-                { label: "Bullet List", tag: "<ul>\n  <li>Point 1</li>\n  <li>Point 2</li>\n</ul>\n" },
+                {
+                  label: "Bullet List",
+                  tag: "<ul>\n  <li>Point 1</li>\n  <li>Point 2</li>\n</ul>\n",
+                },
                 { label: "Quote", tag: '<blockquote>"Kota faculty tip..."</blockquote>\n' },
                 { label: "Paragraph", tag: "<p>Write detailed explanation here...</p>\n" },
-              ].map((btn) => (
+              ].map(btn => (
                 <button
                   key={btn.label}
                   type="button"
-                  onClick={() => setContent((prev) => prev + btn.tag)}
+                  onClick={() => setContent(prev => prev + btn.tag)}
                   style={{
                     padding: "4px 8px",
                     borderRadius: "4px",
@@ -773,7 +837,7 @@ export const BlogPostFormPage: React.FC = () => {
               rows={18}
               placeholder="Write or paste rich HTML article content here. Headings (<h2>, <h3>), paragraphs (<p>), quotes (<blockquote>), and lists (<ul>, <li>) are cleanly rendered."
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={e => setContent(e.target.value)}
               style={{
                 width: "100%",
                 padding: "12px 14px",
@@ -797,13 +861,21 @@ export const BlogPostFormPage: React.FC = () => {
               boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
               <div>
                 <Text size={4} fontWeight="bold">
                   Recommended Books & Learning Materials
                 </Text>
                 <Text size={2} color="default2" style={{ display: "block", marginTop: "2px" }}>
-                  Link educational books directly to promote relevant textbook purchases inside the article.
+                  Link educational books directly to promote relevant textbook purchases inside the
+                  article.
                 </Text>
               </div>
               <button
@@ -828,9 +900,19 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Book List */}
             {recommendedBooks.length === 0 ? (
-              <div style={{ padding: "20px", textAlign: "center", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#6b7280" }}>
+              <div
+                style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  backgroundColor: "#f9fafb",
+                  borderRadius: "6px",
+                  color: "#6b7280",
+                }}
+              >
                 <BookOpen size={24} style={{ margin: "0 auto 6px auto", opacity: 0.5 }} />
-                <span style={{ fontSize: "12px" }}>No recommended books added yet. Click &quot;+ Add Book&quot; above.</span>
+                <span style={{ fontSize: "12px" }}>
+                  No recommended books added yet. Click &quot;+ Add Book&quot; above.
+                </span>
               </div>
             ) : (
               <div style={{ display: "grid", gap: "10px" }}>
@@ -848,12 +930,21 @@ export const BlogPostFormPage: React.FC = () => {
                     }}
                   >
                     <div>
-                      <span style={{ fontWeight: 600, fontSize: "13px", color: "#1f2937" }}>{b.title}</span>
+                      <span style={{ fontWeight: 600, fontSize: "13px", color: "#1f2937" }}>
+                        {b.title}
+                      </span>
                       <span style={{ fontSize: "12px", color: "#6b7280", marginLeft: "8px" }}>
                         {b.subtitle || b.href}
                       </span>
                       {b.price && (
-                        <span style={{ marginLeft: "8px", fontWeight: 700, color: "#16a34a", fontSize: "12px" }}>
+                        <span
+                          style={{
+                            marginLeft: "8px",
+                            fontWeight: 700,
+                            color: "#16a34a",
+                            fontSize: "12px",
+                          }}
+                        >
                           {b.price}
                         </span>
                       )}
@@ -886,51 +977,98 @@ export const BlogPostFormPage: React.FC = () => {
                   border: "1px solid #bbf7d0",
                 }}
               >
-                <Text size={3} fontWeight="bold" style={{ display: "block", marginBottom: "12px", color: "#166534" }}>
+                <Text
+                  size={3}
+                  fontWeight="bold"
+                  style={{ display: "block", marginBottom: "12px", color: "#166534" }}
+                >
                   Add Book Recommendation
                 </Text>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "10px",
+                    marginBottom: "10px",
+                  }}
+                >
                   <input
                     type="text"
                     placeholder="Book Title *"
                     value={newBook.title}
-                    onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
-                    style={{ padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", fontSize: "12px" }}
+                    onChange={e => setNewBook({ ...newBook, title: e.target.value })}
+                    style={{
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "12px",
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Subtitle (e.g. Arihant Publications)"
                     value={newBook.subtitle}
-                    onChange={(e) => setNewBook({ ...newBook, subtitle: e.target.value })}
-                    style={{ padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", fontSize: "12px" }}
+                    onChange={e => setNewBook({ ...newBook, subtitle: e.target.value })}
+                    style={{
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "12px",
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Selling Price (e.g. ₹1,240)"
                     value={newBook.price}
-                    onChange={(e) => setNewBook({ ...newBook, price: e.target.value })}
-                    style={{ padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", fontSize: "12px" }}
+                    onChange={e => setNewBook({ ...newBook, price: e.target.value })}
+                    style={{
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "12px",
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Storefront Link (e.g. /products/dc-pandey)"
                     value={newBook.href}
-                    onChange={(e) => setNewBook({ ...newBook, href: e.target.value })}
-                    style={{ padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", fontSize: "12px" }}
+                    onChange={e => setNewBook({ ...newBook, href: e.target.value })}
+                    style={{
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "12px",
+                    }}
                   />
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
                   <button
                     type="button"
                     onClick={() => setShowAddBook(false)}
-                    style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #d1d5db", backgroundColor: "#fff", fontSize: "12px", cursor: "pointer" }}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "4px",
+                      border: "1px solid #d1d5db",
+                      backgroundColor: "#fff",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                    }}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleAddBook}
-                    style={{ padding: "6px 14px", borderRadius: "4px", border: "none", backgroundColor: "#16a34a", color: "#fff", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "4px",
+                      border: "none",
+                      backgroundColor: "#16a34a",
+                      color: "#fff",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
                   >
                     Save Book
                   </button>
@@ -963,25 +1101,64 @@ export const BlogPostFormPage: React.FC = () => {
                 marginBottom: "20px",
               }}
             >
-              <span style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "#6b7280",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  display: "block",
+                  marginBottom: "6px",
+                }}
+              >
                 Google Search Result Preview
               </span>
-              <div style={{ fontSize: "12px", color: "#202124", display: "flex", alignItems: "center", gap: "4px" }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#202124",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
                 <span>easytopick.in</span>
                 <span>›</span>
                 <span style={{ color: "#5f6368" }}>blogs › {slug || "your-article-slug"}</span>
               </div>
-              <div style={{ fontSize: "18px", color: "#1a0dab", fontWeight: 500, marginTop: "2px", cursor: "pointer" }}>
+              <div
+                style={{
+                  fontSize: "18px",
+                  color: "#1a0dab",
+                  fontWeight: 500,
+                  marginTop: "2px",
+                  cursor: "pointer",
+                }}
+              >
                 {seoTitle || title || "Your Article Title Goes Here"}
               </div>
-              <div style={{ fontSize: "13px", color: "#4d5156", marginTop: "3px", lineHeight: "1.4" }}>
-                {seoDescription || excerpt || "This is how your article description will appear in Google and search engine index results..."}
+              <div
+                style={{ fontSize: "13px", color: "#4d5156", marginTop: "3px", lineHeight: "1.4" }}
+              >
+                {seoDescription ||
+                  excerpt ||
+                  "This is how your article description will appear in Google and search engine index results..."}
               </div>
             </div>
 
             {/* SEO Title Input */}
             <div style={{ marginBottom: "16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 <span>SEO Page Title</span>
                 <span style={{ color: (seoTitle || title).length > 60 ? "#d97706" : "#6b7280" }}>
                   {(seoTitle || title).length} / 60 characters
@@ -991,7 +1168,7 @@ export const BlogPostFormPage: React.FC = () => {
                 type="text"
                 placeholder={title || "SEO optimized title..."}
                 value={seoTitle}
-                onChange={(e) => setSeoTitle(e.target.value)}
+                onChange={e => setSeoTitle(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -1005,9 +1182,22 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* SEO Description Input */}
             <div style={{ marginBottom: "16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 <span>SEO Meta Description</span>
-                <span style={{ color: (seoDescription || excerpt).length > 160 ? "#d97706" : "#6b7280" }}>
+                <span
+                  style={{
+                    color: (seoDescription || excerpt).length > 160 ? "#d97706" : "#6b7280",
+                  }}
+                >
                   {(seoDescription || excerpt).length} / 160 characters
                 </span>
               </div>
@@ -1015,7 +1205,7 @@ export const BlogPostFormPage: React.FC = () => {
                 rows={3}
                 placeholder={excerpt || "Compelling summary for Google search result clicks..."}
                 value={seoDescription}
-                onChange={(e) => setSeoDescription(e.target.value)}
+                onChange={e => setSeoDescription(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -1028,16 +1218,31 @@ export const BlogPostFormPage: React.FC = () => {
             </div>
 
             {/* Canonical URL & Robots */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px",
+                marginBottom: "16px",
+              }}
+            >
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "#374151",
+                    marginBottom: "6px",
+                  }}
+                >
                   Canonical URL (Optional)
                 </label>
                 <input
                   type="text"
                   placeholder="https://easytopick.in/blogs/..."
                   value={canonicalUrl}
-                  onChange={(e) => setCanonicalUrl(e.target.value)}
+                  onChange={e => setCanonicalUrl(e.target.value)}
                   style={{
                     width: "100%",
                     padding: "8px 12px",
@@ -1049,20 +1254,38 @@ export const BlogPostFormPage: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: "flex", gap: "20px", alignItems: "center", paddingTop: "20px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", cursor: "pointer" }}>
+              <div
+                style={{ display: "flex", gap: "20px", alignItems: "center", paddingTop: "20px" }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={robotsIndex}
-                    onChange={(e) => setRobotsIndex(e.target.checked)}
+                    onChange={e => setRobotsIndex(e.target.checked)}
                   />
                   <span>Index (Google Searchable)</span>
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", cursor: "pointer" }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={robotsFollow}
-                    onChange={(e) => setRobotsFollow(e.target.checked)}
+                    onChange={e => setRobotsFollow(e.target.checked)}
                   />
                   <span>Follow Links</span>
                 </label>
@@ -1090,7 +1313,7 @@ export const BlogPostFormPage: React.FC = () => {
             <div style={{ marginBottom: "16px" }}>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={e => setStatus(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -1134,11 +1357,20 @@ export const BlogPostFormPage: React.FC = () => {
               </button>
             )}
 
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", cursor: "pointer", marginTop: "12px" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "13px",
+                cursor: "pointer",
+                marginTop: "12px",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={isFeatured}
-                onChange={(e) => setIsFeatured(e.target.checked)}
+                onChange={e => setIsFeatured(e.target.checked)}
               />
               <span style={{ fontWeight: 600 }}>Feature on Homepage / Spotlight</span>
             </label>
@@ -1160,12 +1392,20 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Author */}
             <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 Author Profile
               </label>
               <select
                 value={authorId}
-                onChange={(e) => setAuthorId(e.target.value)}
+                onChange={e => setAuthorId(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -1176,7 +1416,7 @@ export const BlogPostFormPage: React.FC = () => {
                 }}
               >
                 <option value="">Select Author...</option>
-                {authors.map((a) => (
+                {authors.map(a => (
                   <option key={a.id} value={a.id}>
                     {a.displayName} ({a.designation || "Author"})
                   </option>
@@ -1186,12 +1426,20 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Category */}
             <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 Primary Category
               </label>
               <select
                 value={primaryCategoryId}
-                onChange={(e) => setPrimaryCategoryId(e.target.value)}
+                onChange={e => setPrimaryCategoryId(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -1202,7 +1450,7 @@ export const BlogPostFormPage: React.FC = () => {
                 }}
               >
                 <option value="">Select Category...</option>
-                {categories.map((c) => (
+                {categories.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -1212,7 +1460,15 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Tags */}
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
                 Article Tags
               </label>
               <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
@@ -1220,8 +1476,8 @@ export const BlogPostFormPage: React.FC = () => {
                   type="text"
                   placeholder="e.g. NEET 2026"
                   value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       handleAddTag();
@@ -1254,7 +1510,7 @@ export const BlogPostFormPage: React.FC = () => {
 
               {/* Tag Chips */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                {selectedTags.map((tag) => (
+                {selectedTags.map(tag => (
                   <span
                     key={tag}
                     style={{
@@ -1379,14 +1635,21 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Image URL fallback */}
             <div style={{ marginBottom: "10px" }}>
-              <label style={{ display: "block", fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "11px",
+                  color: "#6b7280",
+                  marginBottom: "4px",
+                }}
+              >
                 Or Image URL
               </label>
               <input
                 type="text"
                 placeholder="https://..."
                 value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
+                onChange={e => setFeaturedImage(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "6px 8px",
@@ -1399,14 +1662,21 @@ export const BlogPostFormPage: React.FC = () => {
 
             {/* Alt text */}
             <div>
-              <label style={{ display: "block", fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "11px",
+                  color: "#6b7280",
+                  marginBottom: "4px",
+                }}
+              >
                 Image Alt Text
               </label>
               <input
                 type="text"
                 placeholder="Descriptive alt text for accessibility..."
                 value={featuredImageAlt}
-                onChange={(e) => setFeaturedImageAlt(e.target.value)}
+                onChange={e => setFeaturedImageAlt(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "6px 8px",
@@ -1450,13 +1720,14 @@ export const BlogPostFormPage: React.FC = () => {
               Schedule Article Publication
             </Text>
             <Text size={2} color="default2" style={{ display: "block", marginBottom: "16px" }}>
-              Choose the date and time when this article should automatically go live on the storefront.
+              Choose the date and time when this article should automatically go live on the
+              storefront.
             </Text>
 
             <input
               type="datetime-local"
               value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
+              onChange={e => setScheduledDate(e.target.value)}
               style={{
                 width: "100%",
                 padding: "8px 12px",
@@ -1533,7 +1804,14 @@ export const BlogPostFormPage: React.FC = () => {
               boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
               <Text size={5} fontWeight="bold">
                 Article Revision History
               </Text>
@@ -1550,7 +1828,7 @@ export const BlogPostFormPage: React.FC = () => {
               <p style={{ fontSize: "13px", color: "#6b7280" }}>No past revisions available yet.</p>
             ) : (
               <div style={{ display: "grid", gap: "12px" }}>
-                {revisions.map((rev) => (
+                {revisions.map(rev => (
                   <div
                     key={rev.id}
                     style={{

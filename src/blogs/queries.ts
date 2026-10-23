@@ -127,6 +127,13 @@ export const UPDATE_BLOG_POST = gql`
         title
         slug
         status
+        featuredImage
+        featuredImageAlt
+        featuredImageCaption
+        ogImage
+        publishedAt
+        scheduledAt
+        updatedAt
       }
       errors {
         code
@@ -537,7 +544,6 @@ export const UPDATE_BLOG_TAG = gql`
     }
   }
 `;
-
 
 export const DELETE_BLOG_TAG = gql`
   mutation DeleteBlogTag($id: ID!) {
