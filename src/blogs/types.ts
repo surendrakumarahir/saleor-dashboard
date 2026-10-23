@@ -70,6 +70,24 @@ export interface BlogPostFAQ {
   sortOrder?: number;
 }
 
+export interface BlogCollectionProduct {
+  id: string;
+  title: string;
+  slug: string;
+  price?: string;
+  originalPrice?: string;
+  thumbnail?: string;
+  subtitle?: string;
+  href?: string;
+}
+
+export interface BlogProductCollection {
+  id: string;
+  name: string;
+  slug?: string;
+  products: BlogCollectionProduct[];
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -106,4 +124,5 @@ export interface BlogPost {
   recommendedBooks?: RecommendedBook[];
   tableOfContents?: TableOfContentsItem[];
   faqs?: BlogPostFAQ[];
+  productCollections?: BlogProductCollection[];
 }

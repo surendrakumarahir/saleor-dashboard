@@ -76,6 +76,7 @@ export const GET_BLOG_POST = gql`
       featuredImageCaption
       recommendedBooks
       tableOfContents
+      productCollections
       faqs {
         id
         question
@@ -559,6 +560,37 @@ export const DELETE_BLOG_TAG = gql`
         code
         message
         field
+      }
+    }
+  }
+`;
+
+export const SEARCH_PRODUCTS_FOR_BLOG = gql`
+  query SearchProductsForBlog($query: String, $channel: String) {
+    products(first: 30, search: $query, channel: $channel) {
+      edges {
+        node {
+          id
+          name
+          slug
+          thumbnail(size: 256) {
+            url
+            alt
+          }
+          category {
+            name
+          }
+          pricing {
+            priceRange {
+              start {
+                gross {
+                  amount
+                  currency
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

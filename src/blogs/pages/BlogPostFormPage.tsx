@@ -6,16 +6,21 @@ import {
   ArrowLeft,
   BookOpen,
   Calendar,
+  Check,
   CheckCircle,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
   Eye,
   HelpCircle,
   History,
   Image as ImageIcon,
+  Layers,
+  Package,
   Plus,
   RotateCcw,
   Save,
+  Search,
   Send,
   Trash2,
   UploadCloud,
@@ -34,15 +39,18 @@ import {
   GET_BLOG_TAGS,
   RESTORE_BLOG_REVISION,
   SCHEDULE_BLOG_POST,
+  SEARCH_PRODUCTS_FOR_BLOG,
   UPDATE_BLOG_POST,
   UPLOAD_BLOG_MEDIA,
 } from "../queries";
 import type {
   BlogAuthor,
   BlogCategory,
+  BlogCollectionProduct,
   BlogPost,
   BlogPostFAQ,
   BlogPostRevision,
+  BlogProductCollection,
   BlogTag,
   RecommendedBook,
 } from "../types";
@@ -88,19 +96,36 @@ export const BlogPostFormPage: React.FC = () => {
   const [ogDescription, setOgDescription] = useState("");
   const [ogImage, setOgImage] = useState("");
 
-  // Recommended Books State
-  const [recommendedBooks, setRecommendedBooks] = useState<RecommendedBook[]>([]);
-  const [newBook, setNewBook] = useState<RecommendedBook>({
-    title: "",
-    subtitle: "",
-    price: "",
-    originalPrice: "",
-    discountBadge: "",
-    href: "",
-    image: "",
-    badge: "",
-  });
-  const [showAddBook, setShowAddBook] = useState(false);
+  // Product Collections State (Dynamic Collections with Real Catalog Products)
+  const [productCollections, setProductCollections] = useState<BlogProductCollection[]>([]);
+
+  // Product Picker Modal State
+  const [pickerCollectionId, setPickerCollectionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+
+  // Debounce search: only trigger catalog search when query is empty (initial) OR more than 2 characters
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+
+    if (trimmed.length === 0) {
+      setDebouncedSearchQuery("");
+
+      return;
+    }
+
+    if (trimmed.length <= 2) {
+      // Don't search if 1 or 2 characters are typed
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(trimmed);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // FAQ State
   const [faqs, setFaqs] = useState<BlogPostFAQ[]>([]);
@@ -151,6 +176,19 @@ export const BlogPostFormPage: React.FC = () => {
   const [restoreRevision, { loading: restoring }] = useMutation(RESTORE_BLOG_REVISION);
   const [uploadMedia, { loading: uploadingImage }] = useMutation(UPLOAD_BLOG_MEDIA);
 
+  const {
+    data: searchResultsData,
+    loading: searchingProducts,
+    error: searchProductsError,
+  } = useQuery(SEARCH_PRODUCTS_FOR_BLOG, {
+    variables: {
+      query: debouncedSearchQuery || undefined,
+      channel: "india",
+    },
+    skip: !pickerCollectionId,
+    fetchPolicy: "network-only",
+  });
+
   // Populate data when editing
   useEffect(() => {
     if (postData?.blogPost) {
@@ -182,8 +220,26 @@ export const BlogPostFormPage: React.FC = () => {
         setSelectedTags(p.tags.map(t => t.name));
       }
 
-      if (Array.isArray(p.recommendedBooks)) {
-        setRecommendedBooks(p.recommendedBooks);
+      if (Array.isArray(p.productCollections) && p.productCollections.length > 0) {
+        setProductCollections(p.productCollections);
+      } else if (Array.isArray(p.recommendedBooks) && p.recommendedBooks.length > 0) {
+        setProductCollections([
+          {
+            id: "col-default",
+            name: "Recommended Books & Learning Materials",
+            slug: "/collections/recommended-books",
+            products: p.recommendedBooks.map((b, idx) => ({
+              id: `legacy-${idx}`,
+              title: b.title,
+              slug: b.href?.replace(/^.*\/products\//, "") || `product-${idx}`,
+              price: b.price,
+              originalPrice: b.originalPrice,
+              thumbnail: b.image,
+              subtitle: b.subtitle,
+              href: b.href,
+            })),
+          },
+        ]);
       }
 
       if (Array.isArray(p.faqs)) {
@@ -285,26 +341,129 @@ export const BlogPostFormPage: React.FC = () => {
     setSelectedTags(selectedTags.filter(t => t !== tagName));
   };
 
-  // Handle Recommended Books
-  const handleAddBook = () => {
-    if (!newBook.title.trim()) return;
+  // Handle Product Collections & Picker
+  const handleAddCollection = () => {
+    const newId = `col-${Date.now()}`;
+    const colNumber = productCollections.length + 1;
 
-    setRecommendedBooks([...recommendedBooks, { ...newBook }]);
-    setNewBook({
-      title: "",
-      subtitle: "",
-      price: "",
-      originalPrice: "",
-      discountBadge: "",
-      href: "",
-      image: "",
-      badge: "",
-    });
-    setShowAddBook(false);
+    setProductCollections(prev => [
+      ...prev,
+      {
+        id: newId,
+        name:
+          prev.length === 0
+            ? "Recommended Books & Learning Materials"
+            : prev.length === 1
+              ? "Learning Materials"
+              : `Collection ${colNumber}`,
+        slug:
+          prev.length === 0
+            ? "/collections/recommended-books"
+            : prev.length === 1
+              ? "/collections/learning-materials"
+              : `/collections/collection-${colNumber}`,
+        products: [],
+      },
+    ]);
   };
 
-  const handleRemoveBook = (index: number) => {
-    setRecommendedBooks(recommendedBooks.filter((_, i) => i !== index));
+  const handleUpdateCollection = (colId: string, field: "name" | "slug", val: string) => {
+    setProductCollections(prev => prev.map(c => (c.id === colId ? { ...c, [field]: val } : c)));
+  };
+
+  const handleRemoveCollection = (colId: string) => {
+    setProductCollections(prev => prev.filter(c => c.id !== colId));
+  };
+
+  const handleRemoveProductFromCollection = (collectionId: string, productId: string) => {
+    setProductCollections(prev =>
+      prev.map(c => {
+        if (c.id !== collectionId) return c;
+
+        return {
+          ...c,
+          products: c.products.filter(p => p.id !== productId),
+        };
+      }),
+    );
+  };
+
+  const handleOpenProductPicker = (collectionId: string) => {
+    setPickerCollectionId(collectionId);
+    setSearchQuery("");
+    setDebouncedSearchQuery("");
+
+    const targetCol = productCollections.find(c => c.id === collectionId);
+
+    setSelectedProductIds(new Set(targetCol?.products.map(p => p.id) || []));
+  };
+
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+  };
+
+  const handleToggleProductSelection = (productId: string) => {
+    setSelectedProductIds(prev => {
+      const next = new Set(prev);
+
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+
+      return next;
+    });
+  };
+
+  const handleConfirmAddProducts = () => {
+    if (!pickerCollectionId) return;
+
+    const currentResults = (searchResultsData?.products?.edges || []).map(
+      (e: { node: any }) => e.node,
+    );
+
+    setProductCollections(prev =>
+      prev.map(col => {
+        if (col.id !== pickerCollectionId) return col;
+
+        const existingMap = new Map<string, BlogCollectionProduct>(
+          col.products.map(p => [p.id, p]),
+        );
+        const updatedList: BlogCollectionProduct[] = [];
+
+        // Preserve already added products that remain selected
+        col.products.forEach(p => {
+          if (selectedProductIds.has(p.id)) {
+            updatedList.push(p);
+          }
+        });
+
+        // Add newly checked products from the search results
+        currentResults.forEach((prod: any) => {
+          if (selectedProductIds.has(prod.id) && !existingMap.has(prod.id)) {
+            const priceGross = prod.pricing?.priceRange?.start?.gross;
+            const formattedPrice = priceGross ? `₹${Math.round(priceGross.amount)}` : "";
+            const newProduct: BlogCollectionProduct = {
+              id: prod.id,
+              title: prod.name,
+              slug: prod.slug,
+              price: formattedPrice,
+              thumbnail: prod.thumbnail?.url || "",
+              subtitle: prod.category?.name || "",
+              href: `/products/${prod.slug}`,
+            };
+
+            updatedList.push(newProduct);
+            existingMap.set(prod.id, newProduct);
+          }
+        });
+
+        return { ...col, products: updatedList };
+      }),
+    );
+
+    setPickerCollectionId(null);
   };
 
   // Handle FAQs
@@ -355,6 +514,17 @@ export const BlogPostFormPage: React.FC = () => {
 
     const postStatus = overrideStatus || status;
 
+    const flattenedBooks: RecommendedBook[] = productCollections.flatMap(col =>
+      col.products.map(p => ({
+        title: p.title,
+        subtitle: p.subtitle || col.name,
+        price: p.price,
+        originalPrice: p.originalPrice,
+        href: p.href || `/products/${p.slug}`,
+        image: p.thumbnail,
+      })),
+    );
+
     const inputData = {
       title: title.trim(),
       slug: slug.trim(),
@@ -378,7 +548,8 @@ export const BlogPostFormPage: React.FC = () => {
       ogTitle: ogTitle.trim() || seoTitle.trim() || title.trim(),
       ogDescription: ogDescription.trim() || seoDescription.trim() || excerpt.trim(),
       ogImage: ogImage || featuredImage || undefined,
-      recommendedBooks: recommendedBooks.length > 0 ? recommendedBooks : undefined,
+      productCollections: productCollections.length > 0 ? productCollections : undefined,
+      recommendedBooks: flattenedBooks.length > 0 ? flattenedBooks : undefined,
       faqs: faqs
         .filter(f => f.question.trim() || f.answer.trim())
         .map((f, idx) => ({
@@ -921,7 +1092,7 @@ export const BlogPostFormPage: React.FC = () => {
             />
           </div>
 
-          {/* Card 3: Recommended Books (E-commerce Integration) */}
+          {/* Card 3: Dynamic Product Collections & Book Recommendations */}
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -936,213 +1107,416 @@ export const BlogPostFormPage: React.FC = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "16px",
+                marginBottom: "20px",
+                flexWrap: "wrap",
+                gap: "12px",
               }}
             >
               <div>
-                <Text size={4} fontWeight="bold">
-                  Recommended Books & Learning Materials
-                </Text>
-                <Text size={2} color="default2" style={{ display: "block", marginTop: "2px" }}>
-                  Link educational books directly to promote relevant textbook purchases inside the
-                  article.
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Layers size={18} color="#059669" />
+                  <Text size={4} fontWeight="bold">
+                    Product Collections & Recommendations
+                  </Text>
+                </div>
+                <Text size={2} color="default2" style={{ display: "block", marginTop: "4px" }}>
+                  Create multiple dynamic collections (e.g. &quot;Recommended Books&quot;,
+                  &quot;Learning Materials&quot;). Each collection has its own title, slug URL, and
+                  real products selected from your store catalog.
                 </Text>
               </div>
+
               <button
                 type="button"
-                onClick={() => setShowAddBook(true)}
+                onClick={handleAddCollection}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "4px",
-                  padding: "6px 12px",
+                  gap: "6px",
+                  padding: "8px 14px",
                   borderRadius: "6px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: "#ffffff",
+                  border: "1px solid #059669",
+                  backgroundColor: "#ecfdf5",
+                  color: "#065f46",
                   fontSize: "12px",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
-                <Plus size={14} /> Add Book
+                <Plus size={14} /> Add Collection
               </button>
             </div>
 
-            {/* Book List */}
-            {recommendedBooks.length === 0 ? (
+            {/* Empty State */}
+            {productCollections.length === 0 ? (
               <div
                 style={{
-                  padding: "20px",
+                  padding: "32px 20px",
                   textAlign: "center",
                   backgroundColor: "#f9fafb",
-                  borderRadius: "6px",
+                  borderRadius: "8px",
+                  border: "1px dashed #d1d5db",
                   color: "#6b7280",
                 }}
               >
-                <BookOpen size={24} style={{ margin: "0 auto 6px auto", opacity: 0.5 }} />
-                <span style={{ fontSize: "12px" }}>
-                  No recommended books added yet. Click &quot;+ Add Book&quot; above.
-                </span>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gap: "10px" }}>
-                {recommendedBooks.map((b, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "10px 14px",
-                      borderRadius: "6px",
-                      border: "1px solid #e5e7eb",
-                      backgroundColor: "#f9fafb",
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontWeight: 600, fontSize: "13px", color: "#1f2937" }}>
-                        {b.title}
-                      </span>
-                      <span style={{ fontSize: "12px", color: "#6b7280", marginLeft: "8px" }}>
-                        {b.subtitle || b.href}
-                      </span>
-                      {b.price && (
-                        <span
-                          style={{
-                            marginLeft: "8px",
-                            fontWeight: 700,
-                            color: "#16a34a",
-                            fontSize: "12px",
-                          }}
-                        >
-                          {b.price}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveBook(idx)}
-                      style={{
-                        border: "none",
-                        backgroundColor: "transparent",
-                        color: "#dc2626",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Add Book Form Modal/Inline */}
-            {showAddBook && (
-              <div
-                style={{
-                  marginTop: "16px",
-                  padding: "16px",
-                  backgroundColor: "#f0fdf4",
-                  borderRadius: "6px",
-                  border: "1px solid #bbf7d0",
-                }}
-              >
-                <Text
-                  size={3}
-                  fontWeight="bold"
-                  style={{ display: "block", marginBottom: "12px", color: "#166534" }}
-                >
-                  Add Book Recommendation
-                </Text>
-                <div
+                <Package size={32} style={{ margin: "0 auto 8px auto", opacity: 0.5 }} />
+                <p
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "10px",
-                    marginBottom: "10px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#374151",
+                    margin: "0 0 4px 0",
                   }}
                 >
-                  <input
-                    type="text"
-                    placeholder="Book Title *"
-                    value={newBook.title}
-                    onChange={e => setNewBook({ ...newBook, title: e.target.value })}
+                  No product collections added yet
+                </p>
+                <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 16px 0" }}>
+                  Add collections to showcase relevant textbooks, practice books, or study materials
+                  inside this article.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleAddCollection}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "#16a34a",
+                    color: "#ffffff",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Plus size={14} /> Add First Collection
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: "20px" }}>
+                {productCollections.map((col, colIdx) => (
+                  <div
+                    key={col.id}
                     style={{
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Subtitle (e.g. Arihant Publications)"
-                    value={newBook.subtitle}
-                    onChange={e => setNewBook({ ...newBook, subtitle: e.target.value })}
-                    style={{
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Selling Price (e.g. ₹1,240)"
-                    value={newBook.price}
-                    onChange={e => setNewBook({ ...newBook, price: e.target.value })}
-                    style={{
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Storefront Link (e.g. /products/dc-pandey)"
-                    value={newBook.href}
-                    onChange={e => setNewBook({ ...newBook, href: e.target.value })}
-                    style={{
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "12px",
-                    }}
-                  />
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddBook(false)}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: "4px",
-                      border: "1px solid #d1d5db",
-                      backgroundColor: "#fff",
-                      fontSize: "12px",
-                      cursor: "pointer",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      backgroundColor: "#fafafa",
+                      padding: "16px",
                     }}
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleAddBook}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "4px",
-                      border: "none",
-                      backgroundColor: "#16a34a",
-                      color: "#fff",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Save Book
-                  </button>
-                </div>
+                    {/* Collection Top Bar */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "14px",
+                        paddingBottom: "10px",
+                        borderBottom: "1px solid #e5e7eb",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "12px",
+                            backgroundColor: "#e0f2fe",
+                            color: "#0369a1",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                          }}
+                        >
+                          Collection #{colIdx + 1}
+                        </span>
+                        <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                          {col.products.length} {col.products.length === 1 ? "product" : "products"}
+                        </span>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenProductPicker(col.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid #16a34a",
+                            backgroundColor: "#f0fdf4",
+                            color: "#166534",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Package size={13} /> Select Products
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCollection(col.id)}
+                          title="Delete Collection"
+                          style={{
+                            border: "1px solid #fecaca",
+                            backgroundColor: "#fef2f2",
+                            color: "#dc2626",
+                            padding: "6px 8px",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Collection Metadata Fields */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "12px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            color: "#4b5563",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          Collection Title *
+                        </label>
+                        <input
+                          type="text"
+                          value={col.name}
+                          onChange={e => handleUpdateCollection(col.id, "name", e.target.value)}
+                          placeholder="e.g. Recommended Books & Learning Materials"
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
+                            backgroundColor: "#ffffff",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            color: "#4b5563",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          Collection URL / Slug
+                        </label>
+                        <input
+                          type="text"
+                          value={col.slug || ""}
+                          onChange={e => handleUpdateCollection(col.id, "slug", e.target.value)}
+                          placeholder="e.g. /book/recommed or /collections/learning-materials"
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
+                            backgroundColor: "#ffffff",
+                            fontSize: "12px",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Products Grid */}
+                    {col.products.length === 0 ? (
+                      <div
+                        style={{
+                          padding: "16px",
+                          textAlign: "center",
+                          backgroundColor: "#ffffff",
+                          borderRadius: "6px",
+                          border: "1px dashed #e5e7eb",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "#6b7280",
+                            display: "block",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          No products added to &quot;{col.name || "this collection"}&quot; yet.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenProductPicker(col.id)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "5px 12px",
+                            borderRadius: "4px",
+                            border: "1px solid #d1d5db",
+                            backgroundColor: "#ffffff",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            color: "#2563eb",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Search size={12} /> Search & Add Real Products
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                          gap: "10px",
+                        }}
+                      >
+                        {col.products.map(prod => (
+                          <div
+                            key={prod.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              border: "1px solid #e5e7eb",
+                              backgroundColor: "#ffffff",
+                            }}
+                          >
+                            {/* Thumbnail */}
+                            {prod.thumbnail ? (
+                              <img
+                                src={prod.thumbnail}
+                                alt={prod.title}
+                                style={{
+                                  width: "44px",
+                                  height: "44px",
+                                  objectFit: "cover",
+                                  borderRadius: "4px",
+                                  border: "1px solid #f3f4f6",
+                                  flexShrink: 0,
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: "44px",
+                                  height: "44px",
+                                  borderRadius: "4px",
+                                  backgroundColor: "#f3f4f6",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "#9ca3af",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <BookOpen size={18} />
+                              </div>
+                            )}
+
+                            {/* Details */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p
+                                title={prod.title}
+                                style={{
+                                  fontSize: "12px",
+                                  fontWeight: 600,
+                                  color: "#1f2937",
+                                  margin: 0,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {prod.title}
+                              </p>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  marginTop: "2px",
+                                }}
+                              >
+                                {prod.subtitle && (
+                                  <span style={{ fontSize: "11px", color: "#6b7280" }}>
+                                    {prod.subtitle}
+                                  </span>
+                                )}
+                                {prod.price && (
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      color: "#16a34a",
+                                    }}
+                                  >
+                                    {prod.price}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              {prod.slug && (
+                                <a
+                                  href={`/products/${prod.slug}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="View on Storefront"
+                                  style={{
+                                    color: "#6b7280",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    padding: "4px",
+                                  }}
+                                >
+                                  <ExternalLink size={13} />
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveProductFromCollection(col.id, prod.id)}
+                                title="Remove from Collection"
+                                style={{
+                                  border: "none",
+                                  backgroundColor: "transparent",
+                                  color: "#dc2626",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  padding: "4px",
+                                }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -2175,6 +2549,408 @@ export const BlogPostFormPage: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Product Catalog Picker Modal */}
+      {pickerCollectionId && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              width: "100%",
+              maxWidth: "760px",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "20px 24px 16px 24px",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+              }}
+            >
+              <div>
+                <Text size={5} fontWeight="bold" style={{ display: "block" }}>
+                  Select Products from Store Catalog
+                </Text>
+                <Text size={2} color="default2" style={{ display: "block", marginTop: "2px" }}>
+                  Adding to collection:{" "}
+                  <strong>
+                    {productCollections.find(c => c.id === pickerCollectionId)?.name ||
+                      "Collection"}
+                  </strong>
+                </Text>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPickerCollectionId(null)}
+                style={{
+                  border: "none",
+                  backgroundColor: "transparent",
+                  color: "#6b7280",
+                  cursor: "pointer",
+                  padding: "4px",
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#f9fafb",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  flex: 1,
+                }}
+              >
+                <Search
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search real products by title, subject, publisher, NEET, class..."
+                  value={searchQuery}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px 9px 36px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    backgroundColor: "#ffffff",
+                    fontSize: "13px",
+                    outline: "none",
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => handleSearchChange("")}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      border: "none",
+                      backgroundColor: "transparent",
+                      color: "#9ca3af",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {searchingProducts && (
+                <span style={{ fontSize: "12px", color: "#2563eb", fontWeight: 600 }}>
+                  Searching...
+                </span>
+              )}
+            </div>
+
+            {searchQuery.trim().length > 0 && searchQuery.trim().length <= 2 && (
+              <div
+                style={{
+                  padding: "8px 24px",
+                  backgroundColor: "#eff6ff",
+                  borderBottom: "1px solid #dbeafe",
+                  color: "#1d4ed8",
+                  fontSize: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <span>
+                  Type more than 2 characters to search (e.g. &quot;NEET&quot;, &quot;Physics&quot;,
+                  &quot;PW&quot;)...
+                </span>
+              </div>
+            )}
+
+            {/* Products List */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: "380px",
+                maxHeight: "55vh",
+                overflowY: "auto",
+                padding: "16px 24px",
+                display: "grid",
+                gap: "8px",
+                alignContent: "start",
+              }}
+            >
+              {searchingProducts ? (
+                <div
+                  style={{
+                    padding: "48px 16px",
+                    textAlign: "center",
+                    color: "#6b7280",
+                  }}
+                >
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    Searching products...
+                  </p>
+                  <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
+                    Querying store catalog for &quot;{debouncedSearchQuery || searchQuery}&quot;...
+                  </p>
+                </div>
+              ) : searchProductsError ? (
+                <div
+                  style={{
+                    padding: "24px 16px",
+                    textAlign: "center",
+                    backgroundColor: "#fef2f2",
+                    borderRadius: "8px",
+                    border: "1px solid #fecaca",
+                    color: "#dc2626",
+                  }}
+                >
+                  <AlertCircle size={28} style={{ margin: "0 auto 6px auto" }} />
+                  <p style={{ fontSize: "13px", fontWeight: 600 }}>Failed to load products</p>
+                  <p style={{ fontSize: "11px", color: "#7f1d1d", marginTop: "4px" }}>
+                    {searchProductsError.message}
+                  </p>
+                </div>
+              ) : searchResultsData?.products?.edges?.length === 0 ? (
+                <div
+                  style={{
+                    padding: "48px 16px",
+                    textAlign: "center",
+                    color: "#6b7280",
+                  }}
+                >
+                  <Package size={36} style={{ margin: "0 auto 8px auto", opacity: 0.4 }} />
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    No products found
+                  </p>
+                  <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                    {debouncedSearchQuery
+                      ? `No products matched "${debouncedSearchQuery}". Try another keyword like "Physics", "Chemistry", or "NEET".`
+                      : "No products available in this catalog."}
+                  </p>
+                </div>
+              ) : (
+                searchResultsData?.products?.edges?.map((edge: { node: any }) => {
+                  const prod = edge.node;
+                  const isSelected = selectedProductIds.has(prod.id);
+                  const priceGross = prod.pricing?.priceRange?.start?.gross;
+                  const formattedPrice = priceGross ? `₹${Math.round(priceGross.amount)}` : "";
+
+                  return (
+                    <div
+                      key={prod.id}
+                      onClick={() => handleToggleProductSelection(prod.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "10px 14px",
+                        borderRadius: "8px",
+                        border: isSelected ? "1.5px solid #16a34a" : "1px solid #e5e7eb",
+                        backgroundColor: isSelected ? "#f0fdf4" : "#ffffff",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      {/* Checkbox indicator */}
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "4px",
+                          border: isSelected ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
+                          backgroundColor: isSelected ? "#16a34a" : "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#ffffff",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {isSelected && <Check size={14} strokeWidth={3} />}
+                      </div>
+
+                      {/* Product Thumbnail */}
+                      {prod.thumbnail?.url ? (
+                        <img
+                          src={prod.thumbnail.url}
+                          alt={prod.name}
+                          style={{
+                            width: "48px",
+                            height: "48px",
+                            objectFit: "cover",
+                            borderRadius: "6px",
+                            border: "1px solid #f3f4f6",
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "6px",
+                            backgroundColor: "#f3f4f6",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#9ca3af",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <BookOpen size={20} />
+                        </div>
+                      )}
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            color: "#111827",
+                            margin: "0 0 2px 0",
+                            lineHeight: "1.3",
+                          }}
+                        >
+                          {prod.name}
+                        </p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {prod.category?.name && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                padding: "1px 6px",
+                                borderRadius: "4px",
+                                backgroundColor: "#f3f4f6",
+                                color: "#4b5563",
+                              }}
+                            >
+                              {prod.category.name}
+                            </span>
+                          )}
+                          <span style={{ fontSize: "11px", color: "#9ca3af" }}>/{prod.slug}</span>
+                        </div>
+                      </div>
+
+                      {/* Price */}
+                      {formattedPrice && (
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: 700,
+                              color: "#16a34a",
+                            }}
+                          >
+                            {formattedPrice}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "16px 24px",
+                borderTop: "1px solid #e5e7eb",
+                backgroundColor: "#f9fafb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                {selectedProductIds.size} {selectedProductIds.size === 1 ? "product" : "products"}{" "}
+                selected
+              </span>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setPickerCollectionId(null)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    backgroundColor: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmAddProducts}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 18px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "#16a34a",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Check size={16} /> Add to Collection
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
