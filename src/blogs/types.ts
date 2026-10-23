@@ -63,6 +63,13 @@ export interface TableOfContentsItem {
   level: 2 | 3;
 }
 
+export interface BlogPostFAQ {
+  id?: string;
+  question: string;
+  answer: string;
+  sortOrder?: number;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -98,4 +105,5 @@ export interface BlogPost {
   revisionNumber?: number;
   recommendedBooks?: RecommendedBook[];
   tableOfContents?: TableOfContentsItem[];
+  faqs?: BlogPostFAQ[];
 }

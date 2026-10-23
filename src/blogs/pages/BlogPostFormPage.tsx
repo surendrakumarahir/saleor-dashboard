@@ -7,7 +7,10 @@ import {
   BookOpen,
   Calendar,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   Eye,
+  HelpCircle,
   History,
   Image as ImageIcon,
   Plus,
@@ -38,6 +41,7 @@ import type {
   BlogAuthor,
   BlogCategory,
   BlogPost,
+  BlogPostFAQ,
   BlogPostRevision,
   BlogTag,
   RecommendedBook,
@@ -97,6 +101,9 @@ export const BlogPostFormPage: React.FC = () => {
     badge: "",
   });
   const [showAddBook, setShowAddBook] = useState(false);
+
+  // FAQ State
+  const [faqs, setFaqs] = useState<BlogPostFAQ[]>([]);
 
   // Schedule modal state
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -177,6 +184,17 @@ export const BlogPostFormPage: React.FC = () => {
 
       if (Array.isArray(p.recommendedBooks)) {
         setRecommendedBooks(p.recommendedBooks);
+      }
+
+      if (Array.isArray(p.faqs)) {
+        setFaqs(
+          p.faqs.map(f => ({
+            id: f.id,
+            question: f.question,
+            answer: f.answer,
+            sortOrder: f.sortOrder,
+          })),
+        );
       }
     }
   }, [postData]);
@@ -289,6 +307,41 @@ export const BlogPostFormPage: React.FC = () => {
     setRecommendedBooks(recommendedBooks.filter((_, i) => i !== index));
   };
 
+  // Handle FAQs
+  const handleAddFaq = () => {
+    setFaqs(prev => [...prev, { question: "", answer: "", sortOrder: prev.length }]);
+  };
+
+  const handleUpdateFaq = (index: number, field: "question" | "answer", value: string) => {
+    setFaqs(prev => {
+      const updated = [...prev];
+
+      updated[index] = { ...updated[index], [field]: value };
+
+      return updated;
+    });
+  };
+
+  const handleRemoveFaq = (index: number) => {
+    setFaqs(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleMoveFaq = (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= faqs.length) return;
+
+    setFaqs(prev => {
+      const updated = [...prev];
+      const temp = updated[index];
+
+      updated[index] = updated[targetIndex];
+      updated[targetIndex] = temp;
+
+      return updated.map((item, idx) => ({ ...item, sortOrder: idx }));
+    });
+  };
+
   // Save Post
   const handleSave = async (overrideStatus?: string) => {
     setErrorMessage(null);
@@ -326,6 +379,14 @@ export const BlogPostFormPage: React.FC = () => {
       ogDescription: ogDescription.trim() || seoDescription.trim() || excerpt.trim(),
       ogImage: ogImage || featuredImage || undefined,
       recommendedBooks: recommendedBooks.length > 0 ? recommendedBooks : undefined,
+      faqs: faqs
+        .filter(f => f.question.trim() || f.answer.trim())
+        .map((f, idx) => ({
+          id: f.id,
+          question: f.question.trim(),
+          answer: f.answer.trim(),
+          sortOrder: idx,
+        })),
     };
 
     try {
@@ -1082,6 +1143,231 @@ export const BlogPostFormPage: React.FC = () => {
                     Save Book
                   </button>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card: Frequently Asked Questions (FAQ) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "8px",
+              border: "1px solid #e5e7eb",
+              padding: "24px",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Text size={4} fontWeight="bold">
+                    Frequently Asked Questions (FAQ)
+                  </Text>
+                  {faqs.length > 0 && (
+                    <span
+                      style={{
+                        backgroundColor: "#ecfdf5",
+                        color: "#047857",
+                        border: "1px solid #a7f3d0",
+                        padding: "1px 8px",
+                        borderRadius: "999px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {faqs.length} {faqs.length === 1 ? "Question" : "Questions"}
+                    </span>
+                  )}
+                </div>
+                <Text size={2} color="default2" style={{ display: "block", marginTop: "2px" }}>
+                  Add question-and-answer pairs to help readers. FAQs automatically generate Google
+                  FAQ rich result schema.
+                </Text>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddFaq}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                  backgroundColor: "#ffffff",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <Plus size={14} /> Add Question
+              </button>
+            </div>
+
+            {/* Empty State */}
+            {faqs.length === 0 ? (
+              <div
+                style={{
+                  padding: "24px",
+                  textAlign: "center",
+                  backgroundColor: "#f9fafb",
+                  borderRadius: "6px",
+                  border: "1px dashed #d1d5db",
+                  color: "#6b7280",
+                }}
+              >
+                <HelpCircle size={28} style={{ margin: "0 auto 8px auto", opacity: 0.4 }} />
+                <div style={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
+                  No FAQs added yet
+                </div>
+                <div style={{ fontSize: "12px", marginTop: "4px" }}>
+                  Click &quot;+ Add Question&quot; above to add common student/reader questions and
+                  boost search ranking.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: "12px" }}>
+                {faqs.map((faq, index) => (
+                  <div
+                    key={faq.id || index}
+                    style={{
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "6px",
+                      backgroundColor: "#fbfcfd",
+                      padding: "14px",
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span
+                          style={{
+                            backgroundColor: "#e0f2fe",
+                            color: "#0369a1",
+                            fontWeight: 700,
+                            fontSize: "11px",
+                            padding: "2px 7px",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          FAQ #{index + 1}
+                        </span>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <button
+                          type="button"
+                          title="Move up"
+                          onClick={() => handleMoveFaq(index, "up")}
+                          disabled={index === 0}
+                          style={{
+                            padding: "4px",
+                            borderRadius: "4px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: "#ffffff",
+                            cursor: index === 0 ? "not-allowed" : "pointer",
+                            opacity: index === 0 ? 0.4 : 1,
+                            color: "#4b5563",
+                            display: "flex",
+                          }}
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Move down"
+                          onClick={() => handleMoveFaq(index, "down")}
+                          disabled={index === faqs.length - 1}
+                          style={{
+                            padding: "4px",
+                            borderRadius: "4px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: "#ffffff",
+                            cursor: index === faqs.length - 1 ? "not-allowed" : "pointer",
+                            opacity: index === faqs.length - 1 ? 0.4 : 1,
+                            color: "#4b5563",
+                            display: "flex",
+                          }}
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Delete FAQ"
+                          onClick={() => handleRemoveFaq(index)}
+                          style={{
+                            padding: "4px",
+                            borderRadius: "4px",
+                            border: "1px solid #fee2e2",
+                            backgroundColor: "#fff",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            display: "flex",
+                            marginLeft: "4px",
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gap: "10px" }}>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="e.g. Which edition of NCERT is best for NEET 2026?"
+                          value={faq.question}
+                          onChange={e => handleUpdateFaq(index, "question", e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            color: "#111827",
+                            outline: "none",
+                            backgroundColor: "#ffffff",
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <textarea
+                          rows={3}
+                          placeholder="Provide a clear, detailed answer to this question..."
+                          value={faq.answer}
+                          onChange={e => handleUpdateFaq(index, "answer", e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
+                            fontSize: "13px",
+                            color: "#374151",
+                            outline: "none",
+                            resize: "vertical",
+                            backgroundColor: "#ffffff",
+                            fontFamily: "inherit",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -76,6 +76,12 @@ export const GET_BLOG_POST = gql`
       featuredImageCaption
       recommendedBooks
       tableOfContents
+      faqs {
+        id
+        question
+        answer
+        sortOrder
+      }
       author {
         id
         displayName
