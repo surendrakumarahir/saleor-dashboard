@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@apollo/client";
+import { getBlogPostPreviewUrl, getStorefrontUrl } from "@dashboard/config";
 import { Text } from "@saleor/macaw-ui-next";
 import {
   AlertCircle,
@@ -47,6 +48,14 @@ export const BlogPostFormPage: React.FC = () => {
   const history = useHistory();
   const { id } = useParams<{ id?: string }>();
   const isEdit = Boolean(id && id !== "new");
+
+  const storefrontHost = useMemo(() => {
+    try {
+      return new URL(getStorefrontUrl()).host;
+    } catch {
+      return "easytopick.in";
+    }
+  }, []);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -501,7 +510,7 @@ export const BlogPostFormPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => window.open(`http://localhost:3000/blogs/${slug}`, "_blank")}
+                onClick={() => window.open(getBlogPostPreviewUrl(slug), "_blank")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -704,7 +713,7 @@ export const BlogPostFormPage: React.FC = () => {
                     color: "#6b7280",
                   }}
                 >
-                  easytopick.in/blogs/
+                  {storefrontHost}/blogs/
                 </span>
                 <input
                   type="text"
@@ -1123,7 +1132,7 @@ export const BlogPostFormPage: React.FC = () => {
                   gap: "4px",
                 }}
               >
-                <span>easytopick.in</span>
+                <span>{storefrontHost}</span>
                 <span>›</span>
                 <span style={{ color: "#5f6368" }}>blogs › {slug || "your-article-slug"}</span>
               </div>
@@ -1240,7 +1249,7 @@ export const BlogPostFormPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="https://easytopick.in/blogs/..."
+                  placeholder={`${getStorefrontUrl()}/blogs/...`}
                   value={canonicalUrl}
                   onChange={e => setCanonicalUrl(e.target.value)}
                   style={{

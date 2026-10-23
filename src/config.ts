@@ -53,6 +53,60 @@ export const getAmazonScraperApiUrl = () => {
 
   return "";
 };
+
+/**
+ * Resolves the Storefront base URL dynamically.
+ * Priority:
+ * 1. process.env.STOREFRONT_URL
+ * 2. window.__SALEOR_CONFIG__?.STOREFRONT_URL
+ * 3. Dynamic hostname resolution based on current dashboard URL:
+ *    - If running locally (localhost / 127.0.0.1): "http://localhost:3000"
+ *    - If on a subdomain like "dashboard.easytopick.in" or "admin.easytopick.in":
+ *      strips the "dashboard." or "admin." prefix -> "https://easytopick.in"
+ *    - If domain ends with "easytopick.in": "https://easytopick.in"
+ *    - Fallback: window.location.origin
+ */
+export const getStorefrontUrl = (): string => {
+  if (process.env.STOREFRONT_URL) {
+    return process.env.STOREFRONT_URL.replace(/\/+$/, "");
+  }
+
+  const configured = window?.__SALEOR_CONFIG__?.STOREFRONT_URL;
+
+  if (configured && !configured.includes("<%=")) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  if (typeof window !== "undefined" && window.location) {
+    const { hostname, protocol } = window.location;
+
+    // Local development
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:3000";
+    }
+
+    // Dynamic subdomain stripping (e.g. dashboard.easytopick.in -> https://easytopick.in)
+    if (hostname.startsWith("dashboard.")) {
+      return `${protocol}//${hostname.replace(/^dashboard\./, "")}`;
+    }
+
+    if (hostname.startsWith("admin.")) {
+      return `${protocol}//${hostname.replace(/^admin\./, "")}`;
+    }
+
+    if (hostname.endsWith("easytopick.in")) {
+      return "https://easytopick.in";
+    }
+
+    return window.location.origin;
+  }
+
+  return "http://localhost:3000";
+};
+
+export const getBlogPostPreviewUrl = (slug?: string): string =>
+  slug ? `${getStorefrontUrl()}/blogs/${slug}` : `${getStorefrontUrl()}/blogs`;
+
 export const SW_INTERVAL = parseInt(process.env.SW_INTERVAL ?? "300", 10);
 export const IS_CLOUD_INSTANCE = window.__SALEOR_CONFIG__.IS_CLOUD_INSTANCE === "true";
 
