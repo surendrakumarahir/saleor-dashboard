@@ -76,6 +76,13 @@ export const GET_BLOG_POST = gql`
       featuredImageCaption
       recommendedBooks
       tableOfContents
+      productCollections
+      faqs {
+        id
+        question
+        answer
+        sortOrder
+      }
       author {
         id
         displayName
@@ -127,6 +134,13 @@ export const UPDATE_BLOG_POST = gql`
         title
         slug
         status
+        featuredImage
+        featuredImageAlt
+        featuredImageCaption
+        ogImage
+        publishedAt
+        scheduledAt
+        updatedAt
       }
       errors {
         code
@@ -538,7 +552,6 @@ export const UPDATE_BLOG_TAG = gql`
   }
 `;
 
-
 export const DELETE_BLOG_TAG = gql`
   mutation DeleteBlogTag($id: ID!) {
     blogTagDelete(id: $id) {
@@ -547,6 +560,37 @@ export const DELETE_BLOG_TAG = gql`
         code
         message
         field
+      }
+    }
+  }
+`;
+
+export const SEARCH_PRODUCTS_FOR_BLOG = gql`
+  query SearchProductsForBlog($query: String, $channel: String) {
+    products(first: 30, search: $query, channel: $channel) {
+      edges {
+        node {
+          id
+          name
+          slug
+          thumbnail(size: 256) {
+            url
+            alt
+          }
+          category {
+            name
+          }
+          pricing {
+            priceRange {
+              start {
+                gross {
+                  amount
+                  currency
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

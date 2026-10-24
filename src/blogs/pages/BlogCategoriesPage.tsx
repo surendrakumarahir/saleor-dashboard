@@ -1,21 +1,9 @@
 import { useMutation, useQuery } from "@apollo/client";
-import { Box, Button, Text } from "@saleor/macaw-ui-next";
-import {
-  ArrowLeft,
-  CheckCircle,
-  Edit,
-  FolderTree,
-  Hash,
-  Plus,
-  Search,
-  Sparkles,
-  Tag,
-  Trash2,
-  X,
-} from "lucide-react";
-import * as React from "react";
+import { ArrowLeft, Edit, FolderTree, Hash, Plus, Search, Tag, Trash2, X } from "lucide-react";
+import type * as React from "react";
 import { useMemo, useState } from "react";
 import { useHistory } from "react-router";
+
 import {
   CREATE_BLOG_CATEGORY,
   CREATE_BLOG_TAG,
@@ -116,23 +104,27 @@ export const BlogCategoriesPage: React.FC = () => {
   // Filtered lists
   const filteredCategories = useMemo(() => {
     if (!searchQuery.trim()) return categories;
+
     const q = searchQuery.toLowerCase();
+
     return categories.filter(
-      (c) =>
+      c =>
         c.name.toLowerCase().includes(q) ||
         c.slug.toLowerCase().includes(q) ||
-        c.description?.toLowerCase().includes(q)
+        c.description?.toLowerCase().includes(q),
     );
   }, [categories, searchQuery]);
 
   const filteredTags = useMemo(() => {
     if (!searchQuery.trim()) return tags;
+
     const q = searchQuery.toLowerCase();
+
     return tags.filter(
-      (t) =>
+      t =>
         t.name.toLowerCase().includes(q) ||
         t.slug.toLowerCase().includes(q) ||
-        t.description?.toLowerCase().includes(q)
+        t.description?.toLowerCase().includes(q),
     );
   }, [tags, searchQuery]);
 
@@ -181,7 +173,8 @@ export const BlogCategoriesPage: React.FC = () => {
 
   const handleCategoryNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setCategoryForm((prev) => ({
+
+    setCategoryForm(prev => ({
       ...prev,
       name: val,
       slug: !editingCategory ? slugify(val) : prev.slug,
@@ -194,6 +187,7 @@ export const BlogCategoriesPage: React.FC = () => {
 
     if (!categoryForm.name.trim()) {
       setCategoryFormErrors({ name: "Category name is required." });
+
       return;
     }
 
@@ -204,6 +198,7 @@ export const BlogCategoriesPage: React.FC = () => {
         // Prevent setting parent to itself
         if (categoryForm.parentId && categoryForm.parentId === editingCategory.id) {
           setCategoryFormErrors({ parentId: "A category cannot be its own parent." });
+
           return;
         }
 
@@ -222,12 +217,15 @@ export const BlogCategoriesPage: React.FC = () => {
         });
 
         const errors = res.data?.blogCategoryUpdate?.errors || [];
+
         if (errors.length > 0) {
           const errObj: Record<string, string> = {};
+
           errors.forEach((err: { field: string; message: string }) => {
             errObj[err.field || "general"] = err.message;
           });
           setCategoryFormErrors(errObj);
+
           return;
         }
       } else {
@@ -245,12 +243,15 @@ export const BlogCategoriesPage: React.FC = () => {
         });
 
         const errors = res.data?.blogCategoryCreate?.errors || [];
+
         if (errors.length > 0) {
           const errObj: Record<string, string> = {};
+
           errors.forEach((err: { field: string; message: string }) => {
             errObj[err.field || "general"] = err.message;
           });
           setCategoryFormErrors(errObj);
+
           return;
         }
       }
@@ -264,6 +265,7 @@ export const BlogCategoriesPage: React.FC = () => {
 
   const handleDeleteCategory = async () => {
     if (!categoryToDelete) return;
+
     try {
       await deleteCategory({ variables: { id: categoryToDelete.id } });
       setCategoryToDelete(null);
@@ -294,7 +296,8 @@ export const BlogCategoriesPage: React.FC = () => {
 
   const handleTagNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setTagForm((prev) => ({
+
+    setTagForm(prev => ({
       ...prev,
       name: val,
       slug: !editingTag ? slugify(val) : prev.slug,
@@ -307,6 +310,7 @@ export const BlogCategoriesPage: React.FC = () => {
 
     if (!tagForm.name.trim()) {
       setTagFormErrors({ name: "Tag name is required." });
+
       return;
     }
 
@@ -324,12 +328,15 @@ export const BlogCategoriesPage: React.FC = () => {
         });
 
         const errors = res.data?.blogTagUpdate?.errors || [];
+
         if (errors.length > 0) {
           const errObj: Record<string, string> = {};
+
           errors.forEach((err: { field: string; message: string }) => {
             errObj[err.field || "general"] = err.message;
           });
           setTagFormErrors(errObj);
+
           return;
         }
       } else {
@@ -342,12 +349,15 @@ export const BlogCategoriesPage: React.FC = () => {
         });
 
         const errors = res.data?.blogTagCreate?.errors || [];
+
         if (errors.length > 0) {
           const errObj: Record<string, string> = {};
+
           errors.forEach((err: { field: string; message: string }) => {
             errObj[err.field || "general"] = err.message;
           });
           setTagFormErrors(errObj);
+
           return;
         }
       }
@@ -361,6 +371,7 @@ export const BlogCategoriesPage: React.FC = () => {
 
   const handleDeleteTag = async () => {
     if (!tagToDelete) return;
+
     try {
       await deleteTag({ variables: { id: tagToDelete.id } });
       setTagToDelete(null);
@@ -428,7 +439,8 @@ export const BlogCategoriesPage: React.FC = () => {
             </span>
           </div>
           <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "14px" }}>
-            Manage hierarchical categories for academic streams and searchable tags for EasyToPick articles.
+            Manage hierarchical categories for academic streams and searchable tags for EasyToPick
+            articles.
           </p>
         </div>
 
@@ -512,9 +524,10 @@ export const BlogCategoriesPage: React.FC = () => {
             padding: "12px 4px",
             background: "transparent",
             border: "none",
-            borderBottom: activeTab === "categories" ? "2px solid #2563eb" : "2px solid transparent",
+            borderBottom:
+              activeTab === "categories" ? "2px solid #2563eb" : "2px solid transparent",
             color: activeTab === "categories" ? "#2563eb" : "#6b7280",
-            fontWeight: activeTab === "categories" ? "700" : "500",
+            fontWeight: activeTab === "categories" ? 700 : 500,
             fontSize: "14px",
             cursor: "pointer",
             marginBottom: "-1px",
@@ -546,7 +559,7 @@ export const BlogCategoriesPage: React.FC = () => {
             border: "none",
             borderBottom: activeTab === "tags" ? "2px solid #2563eb" : "2px solid transparent",
             color: activeTab === "tags" ? "#2563eb" : "#6b7280",
-            fontWeight: activeTab === "tags" ? "700" : "500",
+            fontWeight: activeTab === "tags" ? 700 : 500,
             fontSize: "14px",
             cursor: "pointer",
             marginBottom: "-1px",
@@ -574,13 +587,20 @@ export const BlogCategoriesPage: React.FC = () => {
           <Search
             size={16}
             color="#9ca3af"
-            style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
+            style={{
+              position: "absolute",
+              left: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
           />
           <input
             type="text"
-            placeholder={activeTab === "categories" ? "Search categories by name or slug..." : "Search tags..."}
+            placeholder={
+              activeTab === "categories" ? "Search categories by name or slug..." : "Search tags..."
+            }
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             style={{
               width: "100%",
               padding: "8px 12px 8px 36px",
@@ -617,7 +637,9 @@ export const BlogCategoriesPage: React.FC = () => {
                 No categories found
               </p>
               <p style={{ fontSize: "13px", margin: "4px 0 16px 0" }}>
-                {searchQuery ? "Try refining your search term." : "Create your first category to get started."}
+                {searchQuery
+                  ? "Try refining your search term."
+                  : "Create your first category to get started."}
               </p>
               {!searchQuery && (
                 <button
@@ -638,19 +660,36 @@ export const BlogCategoriesPage: React.FC = () => {
               )}
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+                fontSize: "13px",
+              }}
+            >
               <thead>
-                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb", color: "#4b5563" }}>
+                <tr
+                  style={{
+                    backgroundColor: "#f9fafb",
+                    borderBottom: "1px solid #e5e7eb",
+                    color: "#4b5563",
+                  }}
+                >
                   <th style={{ padding: "12px 16px", fontWeight: 600 }}>Name & Color</th>
                   <th style={{ padding: "12px 16px", fontWeight: 600 }}>Slug</th>
                   <th style={{ padding: "12px 16px", fontWeight: 600 }}>Parent Category</th>
                   <th style={{ padding: "12px 16px", fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "center" }}>Articles</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "right" }}>Actions</th>
+                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "center" }}>
+                    Articles
+                  </th>
+                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "right" }}>
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredCategories.map((cat) => (
+                {filteredCategories.map(cat => (
                   <tr
                     key={cat.id}
                     style={{
@@ -831,7 +870,9 @@ export const BlogCategoriesPage: React.FC = () => {
                 No tags found
               </p>
               <p style={{ fontSize: "13px", margin: "4px 0 16px 0" }}>
-                {searchQuery ? "Try refining your search term." : "Create your first tag to get started."}
+                {searchQuery
+                  ? "Try refining your search term."
+                  : "Create your first tag to get started."}
               </p>
               {!searchQuery && (
                 <button
@@ -852,18 +893,35 @@ export const BlogCategoriesPage: React.FC = () => {
               )}
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+                fontSize: "13px",
+              }}
+            >
               <thead>
-                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb", color: "#4b5563" }}>
+                <tr
+                  style={{
+                    backgroundColor: "#f9fafb",
+                    borderBottom: "1px solid #e5e7eb",
+                    color: "#4b5563",
+                  }}
+                >
                   <th style={{ padding: "12px 16px", fontWeight: 600 }}>Tag Name</th>
                   <th style={{ padding: "12px 16px", fontWeight: 600 }}>Slug</th>
                   <th style={{ padding: "12px 16px", fontWeight: 600 }}>Description</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "center" }}>Articles</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "right" }}>Actions</th>
+                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "center" }}>
+                    Articles
+                  </th>
+                  <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "right" }}>
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTags.map((tag) => (
+                {filteredTags.map(tag => (
                   <tr
                     key={tag.id}
                     style={{
@@ -1028,7 +1086,15 @@ export const BlogCategoriesPage: React.FC = () => {
             <form onSubmit={handleSaveCategory}>
               {/* Category Name */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Category Name *
                 </label>
                 <input
@@ -1047,19 +1113,29 @@ export const BlogCategoriesPage: React.FC = () => {
                   }}
                 />
                 {categoryFormErrors.name && (
-                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{categoryFormErrors.name}</span>
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>
+                    {categoryFormErrors.name}
+                  </span>
                 )}
               </div>
 
               {/* Slug */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   URL Slug
                 </label>
                 <input
                   type="text"
                   value={categoryForm.slug}
-                  onChange={(e) => setCategoryForm((prev) => ({ ...prev, slug: e.target.value }))}
+                  onChange={e => setCategoryForm(prev => ({ ...prev, slug: e.target.value }))}
                   placeholder="neet-books-exam-guides"
                   style={{
                     width: "100%",
@@ -1071,18 +1147,28 @@ export const BlogCategoriesPage: React.FC = () => {
                   }}
                 />
                 {categoryFormErrors.slug && (
-                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{categoryFormErrors.slug}</span>
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>
+                    {categoryFormErrors.slug}
+                  </span>
                 )}
               </div>
 
               {/* Parent Category with Circular Reference Protection */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Parent Category (Optional)
                 </label>
                 <select
                   value={categoryForm.parentId}
-                  onChange={(e) => setCategoryForm((prev) => ({ ...prev, parentId: e.target.value }))}
+                  onChange={e => setCategoryForm(prev => ({ ...prev, parentId: e.target.value }))}
                   style={{
                     width: "100%",
                     padding: "8px 12px",
@@ -1095,35 +1181,50 @@ export const BlogCategoriesPage: React.FC = () => {
                 >
                   <option value="">None (Top-level category)</option>
                   {categories
-                    .filter((c) => !editingCategory || c.id !== editingCategory.id)
-                    .map((c) => (
+                    .filter(c => !editingCategory || c.id !== editingCategory.id)
+                    .map(c => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
                 </select>
                 {categoryFormErrors.parentId && (
-                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{categoryFormErrors.parentId}</span>
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>
+                    {categoryFormErrors.parentId}
+                  </span>
                 )}
               </div>
 
               {/* Badge Color Selector */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Badge Accent Color
                 </label>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  {COLOR_PRESETS.map((color) => (
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}
+                >
+                  {COLOR_PRESETS.map(color => (
                     <button
                       key={color}
                       type="button"
-                      onClick={() => setCategoryForm((prev) => ({ ...prev, badgeColor: color }))}
+                      onClick={() => setCategoryForm(prev => ({ ...prev, badgeColor: color }))}
                       style={{
                         width: "24px",
                         height: "24px",
                         borderRadius: "50%",
                         backgroundColor: color,
-                        border: categoryForm.badgeColor === color ? "3px solid #111827" : "1px solid rgba(0,0,0,0.1)",
+                        border:
+                          categoryForm.badgeColor === color
+                            ? "3px solid #111827"
+                            : "1px solid rgba(0,0,0,0.1)",
                         cursor: "pointer",
                       }}
                     />
@@ -1131,7 +1232,9 @@ export const BlogCategoriesPage: React.FC = () => {
                   <input
                     type="text"
                     value={categoryForm.badgeColor}
-                    onChange={(e) => setCategoryForm((prev) => ({ ...prev, badgeColor: e.target.value }))}
+                    onChange={e =>
+                      setCategoryForm(prev => ({ ...prev, badgeColor: e.target.value }))
+                    }
                     style={{
                       width: "80px",
                       padding: "4px 8px",
@@ -1145,13 +1248,23 @@ export const BlogCategoriesPage: React.FC = () => {
 
               {/* Description */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Description
                 </label>
                 <textarea
                   rows={2}
                   value={categoryForm.description}
-                  onChange={(e) => setCategoryForm((prev) => ({ ...prev, description: e.target.value }))}
+                  onChange={e =>
+                    setCategoryForm(prev => ({ ...prev, description: e.target.value }))
+                  }
                   placeholder="Summary of this stream or academic section..."
                   style={{
                     width: "100%",
@@ -1165,15 +1278,20 @@ export const BlogCategoriesPage: React.FC = () => {
               </div>
 
               {/* Active Toggle */}
-              <div style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <input
                   type="checkbox"
                   id="isActiveToggle"
                   checked={categoryForm.isActive}
-                  onChange={(e) => setCategoryForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                  onChange={e => setCategoryForm(prev => ({ ...prev, isActive: e.target.checked }))}
                   style={{ width: "16px", height: "16px", cursor: "pointer" }}
                 />
-                <label htmlFor="isActiveToggle" style={{ fontSize: "13px", fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+                <label
+                  htmlFor="isActiveToggle"
+                  style={{ fontSize: "13px", fontWeight: 500, color: "#374151", cursor: "pointer" }}
+                >
                   Active and visible on public storefront
                 </label>
               </div>
@@ -1208,7 +1326,11 @@ export const BlogCategoriesPage: React.FC = () => {
                     cursor: "pointer",
                   }}
                 >
-                  {creatingCategory || updatingCategory ? "Saving..." : editingCategory ? "Update Category" : "Create Category"}
+                  {creatingCategory || updatingCategory
+                    ? "Saving..."
+                    : editingCategory
+                      ? "Update Category"
+                      : "Create Category"}
                 </button>
               </div>
             </form>
@@ -1243,11 +1365,22 @@ export const BlogCategoriesPage: React.FC = () => {
               boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
             }}
           >
-            <h3 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px 0", color: "#111827" }}>
+            <h3
+              style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px 0", color: "#111827" }}
+            >
               Delete Category?
             </h3>
-            <p style={{ color: "#4b5563", fontSize: "14px", lineHeight: "1.5", margin: "0 0 20px 0" }}>
-              Are you sure you want to delete category <strong>&quot;{categoryToDelete.name}&quot;</strong>? Articles assigned to this category will not be deleted, but will become uncategorized.
+            <p
+              style={{
+                color: "#4b5563",
+                fontSize: "14px",
+                lineHeight: "1.5",
+                margin: "0 0 20px 0",
+              }}
+            >
+              Are you sure you want to delete category{" "}
+              <strong>&quot;{categoryToDelete.name}&quot;</strong>? Articles assigned to this
+              category will not be deleted, but will become uncategorized.
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
@@ -1356,7 +1489,15 @@ export const BlogCategoriesPage: React.FC = () => {
             <form onSubmit={handleSaveTag}>
               {/* Tag Name */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Tag Name *
                 </label>
                 <input
@@ -1381,13 +1522,21 @@ export const BlogCategoriesPage: React.FC = () => {
 
               {/* Tag Slug */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   URL Slug
                 </label>
                 <input
                   type="text"
                   value={tagForm.slug}
-                  onChange={(e) => setTagForm((prev) => ({ ...prev, slug: e.target.value }))}
+                  onChange={e => setTagForm(prev => ({ ...prev, slug: e.target.value }))}
                   placeholder="organic-chemistry"
                   style={{
                     width: "100%",
@@ -1405,13 +1554,21 @@ export const BlogCategoriesPage: React.FC = () => {
 
               {/* Tag Description */}
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Description (Optional)
                 </label>
                 <textarea
                   rows={2}
                   value={tagForm.description}
-                  onChange={(e) => setTagForm((prev) => ({ ...prev, description: e.target.value }))}
+                  onChange={e => setTagForm(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Brief context for this topic tag..."
                   style={{
                     width: "100%",
@@ -1454,7 +1611,11 @@ export const BlogCategoriesPage: React.FC = () => {
                     cursor: "pointer",
                   }}
                 >
-                  {creatingTag || updatingTag ? "Saving..." : editingTag ? "Update Tag" : "Create Tag"}
+                  {creatingTag || updatingTag
+                    ? "Saving..."
+                    : editingTag
+                      ? "Update Tag"
+                      : "Create Tag"}
                 </button>
               </div>
             </form>
@@ -1489,11 +1650,21 @@ export const BlogCategoriesPage: React.FC = () => {
               boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
             }}
           >
-            <h3 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px 0", color: "#111827" }}>
+            <h3
+              style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px 0", color: "#111827" }}
+            >
               Delete Tag?
             </h3>
-            <p style={{ color: "#4b5563", fontSize: "14px", lineHeight: "1.5", margin: "0 0 20px 0" }}>
-              Are you sure you want to delete tag <strong>&quot;#{tagToDelete.name}&quot;</strong>? It will be removed from all associated articles.
+            <p
+              style={{
+                color: "#4b5563",
+                fontSize: "14px",
+                lineHeight: "1.5",
+                margin: "0 0 20px 0",
+              }}
+            >
+              Are you sure you want to delete tag <strong>&quot;#{tagToDelete.name}&quot;</strong>?
+              It will be removed from all associated articles.
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button

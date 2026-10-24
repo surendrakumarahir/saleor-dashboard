@@ -58,6 +58,7 @@ export default defineConfig(({ command, mode }) => {
     ENABLED_SERVICE_NAME_HEADER,
     ONBOARDING_USER_JOINED_DATE_THRESHOLD,
     AMAZON_SCRAPER_API_URL,
+    STOREFRONT_URL,
     // Multi-schema support
     FF_USE_STAGING_SCHEMA,
 
@@ -87,6 +88,7 @@ export default defineConfig(({ command, mode }) => {
           EXTENSIONS_API_URL: EXTENSIONS_API_URL ?? "",
           IS_CLOUD_INSTANCE,
           LOCALE_CODE,
+          STOREFRONT_URL: STOREFRONT_URL ?? "",
           POSTHOG_KEY,
           POSTHOG_EXCLUDED_DOMAINS,
           POSTHOG_HOST,

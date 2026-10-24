@@ -23,6 +23,7 @@ declare interface Window {
     LOCALE_CODE?: string;
     EXTENSIONS_API_URL?: string;
     IS_CLOUD_INSTANCE?: string;
+    STOREFRONT_URL?: string;
   };
 }
 
