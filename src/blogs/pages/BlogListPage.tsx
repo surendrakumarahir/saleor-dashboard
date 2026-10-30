@@ -17,6 +17,7 @@ import {
   Tag,
   Trash2,
   Users,
+  MessageSquare,
 } from "lucide-react";
 import type * as React from "react";
 import { useMemo, useState } from "react";
@@ -31,7 +32,7 @@ import {
   PUBLISH_BLOG_POST,
 } from "../queries";
 import type { BlogCategory, BlogPost } from "../types";
-import { blogAuthorsPath, blogCategoriesPath, blogCreatePath, blogEditPath } from "../urls";
+import { blogAuthorsPath, blogCategoriesPath, blogCommentsPath, blogCreatePath, blogEditPath } from "../urls";
 
 export const BlogListPage: React.FC = () => {
   const history = useHistory();
@@ -240,6 +241,25 @@ export const BlogListPage: React.FC = () => {
           >
             <Users size={15} />
             Authors
+          </button>
+          <button
+            onClick={() => history.push(blogCommentsPath)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              borderRadius: "6px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#374151",
+              cursor: "pointer",
+            }}
+          >
+            <MessageSquare size={15} />
+            Comments & Q&A
           </button>
           <button
             onClick={() => history.push(blogCreatePath)}

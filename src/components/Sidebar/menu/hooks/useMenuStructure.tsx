@@ -1,6 +1,11 @@
 import { useUser } from "@dashboard/auth/useUser";
 import { bannerListPath } from "@dashboard/banners/urls";
-import { blogAuthorsPath, blogCategoriesPath, blogListPath } from "@dashboard/blogs/urls";
+import {
+  blogAuthorsPath,
+  blogCategoriesPath,
+  blogCommentsPath,
+  blogListPath,
+} from "@dashboard/blogs/urls";
 import { categoryListUrl } from "@dashboard/categories/urls";
 import { collectionListUrl } from "@dashboard/collections/urls";
 import { iconSize } from "@dashboard/components/icons";
@@ -288,6 +293,13 @@ export function useMenuStructure() {
           label: "Authors",
           id: "blog-authors",
           url: blogAuthorsPath,
+          permissions: [],
+          type: "item",
+        },
+        {
+          label: "Blog Comments",
+          id: "blog-comments",
+          url: blogCommentsPath,
           permissions: [],
           type: "item",
         },
