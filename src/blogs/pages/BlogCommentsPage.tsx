@@ -1,4 +1,5 @@
-import { getBlogPostPreviewUrl, getStorefrontUrl } from "@dashboard/config";
+import { useMutation, useQuery } from "@apollo/client";
+import { getBlogPostPreviewUrl } from "@dashboard/config";
 import { useNotifier } from "@dashboard/hooks/useNotifier";
 import {
   AlertTriangle,
@@ -20,6 +21,13 @@ import type * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHistory } from "react-router";
 
+import {
+  BLOG_COMMENT_BULK_DELETE,
+  BLOG_COMMENT_BULK_UPDATE_STATUS,
+  BLOG_COMMENT_DELETE,
+  BLOG_COMMENT_STATUS_UPDATE,
+  GET_BLOG_COMMENTS,
+} from "../queries";
 import type { BlogComment, BlogCommentStatus } from "../types";
 import { blogAuthorsPath, blogCategoriesPath, blogListPath } from "../urls";
 
@@ -28,7 +36,6 @@ export const BlogCommentsPage: React.FC = () => {
   const notify = useNotifier();
 
   const [comments, setComments] = useState<BlogComment[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<"ALL" | BlogCommentStatus>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -45,212 +52,220 @@ export const BlogCommentsPage: React.FC = () => {
   // Modal for full comment detail preview
   const [previewComment, setPreviewComment] = useState<BlogComment | null>(null);
 
-  const storefrontBase = getStorefrontUrl();
+  // Apollo GraphQL queries & mutations
+  const {
+    data: commentsData,
+    loading: queryLoading,
+    refetch,
+  } = useQuery(GET_BLOG_COMMENTS, {
+    variables: { first: 100 },
+    fetchPolicy: "network-only",
+  });
+
+  const [updateStatusMutation] = useMutation(BLOG_COMMENT_STATUS_UPDATE);
+  const [bulkUpdateStatusMutation] = useMutation(BLOG_COMMENT_BULK_UPDATE_STATUS);
+  const [deleteCommentMutation] = useMutation(BLOG_COMMENT_DELETE);
+  const [bulkDeleteMutation] = useMutation(BLOG_COMMENT_BULK_DELETE);
+
+  const loading = queryLoading && comments.length === 0;
+
+  // Sync comments from Apollo query into local state
+  useEffect(() => {
+    if (commentsData?.blogComments?.edges) {
+      const mapped: BlogComment[] = commentsData.blogComments.edges.map((edge: any) => ({
+        id: edge.node.id,
+        postId: edge.node.postId,
+        slug: edge.node.postSlug,
+        postSlug: edge.node.postSlug,
+        blogTitle: edge.node.postTitle,
+        postTitle: edge.node.postTitle,
+        authorName: edge.node.authorName,
+        authorEmail: edge.node.authorEmail || "",
+        content: edge.node.content,
+        status: edge.node.status,
+        isPinned: edge.node.isPinned,
+        createdAt: edge.node.createdAt,
+        updatedAt: edge.node.updatedAt,
+      }));
+
+      setComments(mapped);
+    }
+  }, [commentsData]);
 
   const fetchComments = useCallback(
     async (isManualRefresh = false) => {
       if (isManualRefresh) {
         setRefreshing(true);
-      } else {
-        setLoading(true);
       }
 
-      const endpoints = [
-        `${storefrontBase}/api/blogs/comments?admin=true`,
-        "http://localhost:3000/api/blogs/comments?admin=true",
-        "https://easytopick.in/api/blogs/comments?admin=true",
-      ];
+      try {
+        const res = await refetch();
 
-      let fetched = false;
-
-      for (const url of endpoints) {
-        try {
-          const res = await fetch(url, {
-            cache: "no-store",
-            headers: { Accept: "application/json" },
+        if (isManualRefresh && res.data?.blogComments) {
+          notify({
+            status: "success",
+            text: `Refreshed comments: ${res.data.blogComments.totalCount ?? res.data.blogComments.edges.length} loaded.`,
           });
-
-          if (res.ok) {
-            const data = (await res.json()) as {
-              success?: boolean;
-              comments?: BlogComment[];
-            };
-
-            if (data.success && Array.isArray(data.comments)) {
-              setComments(data.comments);
-              fetched = true;
-              if (isManualRefresh) {
-                notify({
-                  status: "success",
-                  text: `Refreshed comments: ${data.comments.length} loaded.`,
-                });
-              }
-              break;
-            }
-          }
-        } catch {
-          // Fallback
+        }
+      } catch {
+        if (isManualRefresh) {
+          notify({
+            status: "error",
+            text: "Failed to refresh comments from API.",
+          });
+        }
+      } finally {
+        if (isManualRefresh) {
+          setRefreshing(false);
         }
       }
-
-      if (!fetched && isManualRefresh) {
-        notify({
-          status: "error",
-          text: "Could not connect to storefront comments API. Make sure storefront is running.",
-        });
-      }
-
-      setLoading(false);
-      setRefreshing(false);
     },
-    [storefrontBase, notify]
+    [refetch, notify],
   );
-
-  useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
 
   const handleUpdateStatus = async (id: string, status: BlogCommentStatus) => {
     setActionId(id);
 
-    const endpoints = [
-      `${storefrontBase}/api/blogs/comments`,
-      "http://localhost:3000/api/blogs/comments",
-      "https://easytopick.in/api/blogs/comments",
-    ];
+    try {
+      const res = await updateStatusMutation({
+        variables: { id, status },
+      });
+      const errors = res.data?.blogCommentStatusUpdate?.errors;
 
-    let updated = false;
-
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, status }),
+      if (errors && errors.length > 0) {
+        notify({
+          status: "error",
+          text: errors[0].message || "Failed to update comment status.",
         });
-
-        if (res.ok) {
-          setComments(prev =>
-            prev.map(c =>
-              c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c
-            )
-          );
-          updated = true;
-          notify({
-            status: status === "APPROVED" ? "success" : "warning",
-            text:
-              status === "APPROVED"
-                ? "Comment approved & published live!"
-                : "Comment rejected.",
-          });
-          break;
-        }
-      } catch {
-        // Fallback
+      } else {
+        setComments(prev =>
+          prev.map(c => (c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c)),
+        );
+        notify({
+          status: status === "APPROVED" ? "success" : "warning",
+          text: status === "APPROVED" ? "Comment approved & published live!" : "Comment rejected.",
+        });
       }
-    }
-
-    if (!updated) {
+    } catch (err: any) {
       notify({
         status: "error",
-        text: "Failed to update comment status.",
+        text: err?.message || "Failed to update comment status.",
       });
+    } finally {
+      setActionId(null);
     }
-
-    setActionId(null);
   };
 
   const confirmDelete = async () => {
     if (!commentToDelete) return;
 
     setIsDeleting(true);
+
     const targetId = commentToDelete.id;
 
-    const endpoints = [
-      `${storefrontBase}/api/blogs/comments?id=${encodeURIComponent(targetId)}`,
-      `http://localhost:3000/api/blogs/comments?id=${encodeURIComponent(targetId)}`,
-      `https://easytopick.in/api/blogs/comments?id=${encodeURIComponent(targetId)}`,
-    ];
+    try {
+      const res = await deleteCommentMutation({
+        variables: { id: targetId },
+      });
+      const errors = res.data?.blogCommentDelete?.errors;
 
-    let deleted = false;
-
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+      if (errors && errors.length > 0) {
+        notify({
+          status: "error",
+          text: errors[0].message || "Failed to delete comment.",
         });
-
-        if (res.ok) {
-          setComments(prev => prev.filter(c => c.id !== targetId));
-          setSelectedIds(prev => prev.filter(id => id !== targetId));
-          deleted = true;
-          notify({
-            status: "success",
-            text: "Comment permanently deleted.",
-          });
-          break;
-        }
-      } catch {
-        // Fallback
+      } else {
+        setComments(prev => prev.filter(c => c.id !== targetId));
+        setSelectedIds(prev => prev.filter(id => id !== targetId));
+        notify({
+          status: "success",
+          text: "Comment permanently deleted.",
+        });
       }
-    }
-
-    if (!deleted) {
+    } catch (err: any) {
       notify({
         status: "error",
-        text: "Failed to delete comment.",
+        text: err?.message || "Failed to delete comment.",
       });
+    } finally {
+      setIsDeleting(false);
+      setCommentToDelete(null);
     }
-
-    setIsDeleting(false);
-    setCommentToDelete(null);
   };
 
   // Bulk Actions
   const handleBulkApprove = async () => {
     if (selectedIds.length === 0) return;
+
     setBulkActionLoading(true);
 
-    for (const id of selectedIds) {
-      await fetch(`${storefrontBase}/api/blogs/comments`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: "APPROVED" }),
-      }).catch(() => null);
-    }
+    try {
+      const res = await bulkUpdateStatusMutation({
+        variables: { ids: selectedIds, status: "APPROVED" },
+      });
+      const errors = res.data?.blogCommentBulkUpdateStatus?.errors;
 
-    setComments(prev =>
-      prev.map(c => (selectedIds.includes(c.id) ? { ...c, status: "APPROVED" } : c))
-    );
-    notify({
-      status: "success",
-      text: `${selectedIds.length} comments approved!`,
-    });
-    setSelectedIds([]);
-    setBulkActionLoading(false);
+      if (errors && errors.length > 0) {
+        notify({
+          status: "error",
+          text: errors[0].message || "Failed to approve comments.",
+        });
+      } else {
+        setComments(prev =>
+          prev.map(c => (selectedIds.includes(c.id) ? { ...c, status: "APPROVED" } : c)),
+        );
+        notify({
+          status: "success",
+          text: `${selectedIds.length} comments approved!`,
+        });
+        setSelectedIds([]);
+      }
+    } catch (err: any) {
+      notify({
+        status: "error",
+        text: err?.message || "Failed to bulk approve comments.",
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
   };
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
+
     if (!window.confirm(`Permanently delete ${selectedIds.length} selected comments?`)) {
       return;
     }
+
     setBulkActionLoading(true);
 
-    for (const id of selectedIds) {
-      await fetch(`${storefrontBase}/api/blogs/comments?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      }).catch(() => null);
-    }
+    try {
+      const res = await bulkDeleteMutation({
+        variables: { ids: selectedIds },
+      });
+      const errors = res.data?.blogCommentBulkDelete?.errors;
 
-    setComments(prev => prev.filter(c => !selectedIds.includes(c.id)));
-    notify({
-      status: "success",
-      text: `${selectedIds.length} comments deleted!`,
-    });
-    setSelectedIds([]);
-    setBulkActionLoading(false);
+      if (errors && errors.length > 0) {
+        notify({
+          status: "error",
+          text: errors[0].message || "Failed to delete comments.",
+        });
+      } else {
+        setComments(prev => prev.filter(c => !selectedIds.includes(c.id)));
+        notify({
+          status: "success",
+          text: `${selectedIds.length} comments deleted!`,
+        });
+        setSelectedIds([]);
+      }
+    } catch (err: any) {
+      notify({
+        status: "error",
+        text: err?.message || "Failed to bulk delete comments.",
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
   };
 
   const toggleSelectAll = () => {
@@ -262,9 +277,7 @@ export const BlogCommentsPage: React.FC = () => {
   };
 
   const toggleSelectOne = (id: string) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    setSelectedIds(prev => (prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]));
   };
 
   const filteredComments = useMemo(() => {
@@ -606,7 +619,10 @@ export const BlogCommentsPage: React.FC = () => {
 
         {/* Right Search Input */}
         <div style={{ position: "relative", minWidth: "260px" }}>
-          <Search size={13} style={{ position: "absolute", left: "9px", top: "8px", color: "#94a3b8" }} />
+          <Search
+            size={13}
+            style={{ position: "absolute", left: "9px", top: "8px", color: "#94a3b8" }}
+          />
           <input
             type="text"
             placeholder="Search student, comment, blog..."
@@ -752,8 +768,7 @@ export const BlogCommentsPage: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={
-                    filteredComments.length > 0 &&
-                    selectedIds.length === filteredComments.length
+                    filteredComments.length > 0 && selectedIds.length === filteredComments.length
                   }
                   onChange={toggleSelectAll}
                   style={{ cursor: "pointer", margin: 0 }}
@@ -782,8 +797,13 @@ export const BlogCommentsPage: React.FC = () => {
               </div>
             ) : filteredComments.length === 0 ? (
               <div style={{ padding: "48px 20px", textAlign: "center", color: "#94a3b8" }}>
-                <MessageSquare size={32} style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }} />
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "#334155" }}>No comments found</div>
+                <MessageSquare
+                  size={32}
+                  style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }}
+                />
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "#334155" }}>
+                  No comments found
+                </div>
                 <div style={{ fontSize: "12px", marginTop: "2px" }}>
                   {statusFilter !== "ALL"
                     ? `No comments in '${statusFilter}' status.`
@@ -809,8 +829,8 @@ export const BlogCommentsPage: React.FC = () => {
                         backgroundColor: isSelected
                           ? "#f0fdf4"
                           : comment.status === "PENDING"
-                          ? "#fffdf7"
-                          : "#ffffff",
+                            ? "#fffdf7"
+                            : "#ffffff",
                         transition: "background-color 0.1s ease",
                         fontSize: "12.5px",
                       }}
@@ -838,7 +858,15 @@ export const BlogCommentsPage: React.FC = () => {
                       </div>
 
                       {/* Col 2: Author Avatar & Name */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "9px", minWidth: 0, paddingRight: "8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "9px",
+                          minWidth: 0,
+                          paddingRight: "8px",
+                        }}
+                      >
                         <div
                           style={{
                             width: "28px",
@@ -1290,6 +1318,7 @@ export const BlogCommentsPage: React.FC = () => {
                 <button
                   onClick={() => {
                     const c = previewComment;
+
                     setPreviewComment(null);
                     setCommentToDelete(c);
                   }}
@@ -1347,7 +1376,9 @@ export const BlogCommentsPage: React.FC = () => {
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}
+            >
               <div
                 style={{
                   width: "36px",
@@ -1385,7 +1416,9 @@ export const BlogCommentsPage: React.FC = () => {
               }}
             >
               <div style={{ fontWeight: 600 }}>{commentToDelete.authorName}</div>
-              <div style={{ color: "#64748b", fontSize: "11.5px" }}>&ldquo;{commentToDelete.content}&rdquo;</div>
+              <div style={{ color: "#64748b", fontSize: "11.5px" }}>
+                &ldquo;{commentToDelete.content}&rdquo;
+              </div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>

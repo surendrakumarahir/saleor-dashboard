@@ -595,3 +595,93 @@ export const SEARCH_PRODUCTS_FOR_BLOG = gql`
     }
   }
 `;
+
+export const GET_BLOG_COMMENTS = gql`
+  query GetBlogComments(
+    $filter: BlogCommentFilterInput
+    $sortBy: BlogCommentSortingInput
+    $first: Int
+    $after: String
+  ) {
+    blogComments(filter: $filter, sortBy: $sortBy, first: $first, after: $after) {
+      edges {
+        node {
+          id
+          postId
+          postSlug
+          postTitle
+          authorName
+          authorEmail
+          content
+          status
+          isPinned
+          createdAt
+          updatedAt
+        }
+      }
+      totalCount
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+    }
+  }
+`;
+
+export const BLOG_COMMENT_STATUS_UPDATE = gql`
+  mutation BlogCommentStatusUpdate($id: ID!, $status: BlogCommentStatusEnum!) {
+    blogCommentStatusUpdate(id: $id, status: $status) {
+      comment {
+        id
+        status
+        updatedAt
+      }
+      errors {
+        code
+        message
+        field
+      }
+    }
+  }
+`;
+
+export const BLOG_COMMENT_BULK_UPDATE_STATUS = gql`
+  mutation BlogCommentBulkUpdateStatus($ids: [ID!]!, $status: BlogCommentStatusEnum!) {
+    blogCommentBulkUpdateStatus(ids: $ids, status: $status) {
+      count
+      errors {
+        code
+        message
+        field
+      }
+    }
+  }
+`;
+
+export const BLOG_COMMENT_DELETE = gql`
+  mutation BlogCommentDelete($id: ID!) {
+    blogCommentDelete(id: $id) {
+      success
+      errors {
+        code
+        message
+        field
+      }
+    }
+  }
+`;
+
+export const BLOG_COMMENT_BULK_DELETE = gql`
+  mutation BlogCommentBulkDelete($ids: [ID!]!) {
+    blogCommentBulkDelete(ids: $ids) {
+      count
+      errors {
+        code
+        message
+        field
+      }
+    }
+  }
+`;
