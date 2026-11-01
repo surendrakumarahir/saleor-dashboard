@@ -1,5 +1,23 @@
 export type BlogPostStatus = "DRAFT" | "IN_REVIEW" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
 
+export type BlogCommentStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface BlogComment {
+  id: string;
+  postId?: string;
+  postSlug?: string;
+  postTitle?: string;
+  slug?: string;
+  blogTitle?: string;
+  authorName: string;
+  authorEmail: string;
+  content: string;
+  status: BlogCommentStatus;
+  isPinned?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface BlogAuthor {
   id: string;
   displayName: string;

@@ -5,4 +5,6 @@ export const blogCreatePath = `${blogSection}/new`;
 export const blogEditPath = (id: string): string => `${blogSection}/${id}`;
 export const blogCategoriesPath = `${blogSection}/categories`;
 export const blogAuthorsPath = `${blogSection}/authors`;
+export const blogCommentsPath = `${blogSection}/comments`;
 export const blogTagsPath = `${blogSection}/tags`;
+
