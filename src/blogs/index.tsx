@@ -2,11 +2,13 @@ import * as React from "react";
 import { Redirect, Route, Switch } from "react-router-dom";
 import { BlogAuthorsPage } from "./pages/BlogAuthorsPage";
 import { BlogCategoriesPage } from "./pages/BlogCategoriesPage";
+import { BlogCommentsPage } from "./pages/BlogCommentsPage";
 import { BlogListPage } from "./pages/BlogListPage";
 import { BlogPostFormPage } from "./pages/BlogPostFormPage";
 import {
   blogAuthorsPath,
   blogCategoriesPath,
+  blogCommentsPath,
   blogCreatePath,
   blogEditPath,
   blogListPath,
@@ -21,6 +23,7 @@ export const BlogSection: React.FC = () => {
       <Route exact path={blogCategoriesPath} component={BlogCategoriesPage} />
       <Route exact path={blogTagsPath} component={BlogCategoriesPage} />
       <Route exact path={blogAuthorsPath} component={BlogAuthorsPage} />
+      <Route exact path={blogCommentsPath} component={BlogCommentsPage} />
       <Route path={blogEditPath(":id")} component={BlogPostFormPage} />
       <Redirect to={blogListPath} />
     </Switch>

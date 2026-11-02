@@ -7,6 +7,7 @@ import {
   Globe,
   Linkedin,
   Mail,
+  MessageSquare,
   Plus,
   Search,
   Sparkles,
@@ -27,7 +28,7 @@ import {
   UPDATE_BLOG_AUTHOR,
 } from "../queries";
 import type { BlogAuthor } from "../types";
-import { blogCategoriesPath, blogListPath } from "../urls";
+import { blogCategoriesPath, blogCommentsPath, blogListPath } from "../urls";
 
 export const BlogAuthorsPage: React.FC = () => {
   const history = useHistory();
@@ -298,6 +299,25 @@ export const BlogAuthorsPage: React.FC = () => {
             }}
           >
             Categories & Tags
+          </button>
+          <button
+            onClick={() => history.push(blogCommentsPath)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              borderRadius: "8px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              color: "#374151",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <MessageSquare size={14} />
+            Comments
           </button>
           <button
             onClick={openCreateAuthor}

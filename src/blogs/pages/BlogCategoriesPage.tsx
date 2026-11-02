@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@apollo/client";
-import { ArrowLeft, Edit, FolderTree, Hash, Plus, Search, Tag, Trash2, X } from "lucide-react";
+import { ArrowLeft, Edit, FolderTree, Hash, MessageSquare, Plus, Search, Tag, Trash2, X } from "lucide-react";
 import type * as React from "react";
 import { useMemo, useState } from "react";
 import { useHistory } from "react-router";
@@ -15,7 +15,7 @@ import {
   UPDATE_BLOG_TAG,
 } from "../queries";
 import type { BlogCategory, BlogTag } from "../types";
-import { blogAuthorsPath, blogListPath } from "../urls";
+import { blogAuthorsPath, blogCommentsPath, blogListPath } from "../urls";
 
 const COLOR_PRESETS = [
   "#2563eb", // Blue
@@ -460,6 +460,25 @@ export const BlogCategoriesPage: React.FC = () => {
             }}
           >
             Manage Authors
+          </button>
+          <button
+            onClick={() => history.push(blogCommentsPath)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              borderRadius: "8px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              color: "#374151",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <MessageSquare size={14} />
+            Comments
           </button>
 
           {activeTab === "categories" ? (
