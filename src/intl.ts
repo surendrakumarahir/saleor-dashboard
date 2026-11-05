@@ -522,6 +522,11 @@ export const sectionNames = defineMessages({
     defaultMessage: "Gift Cards",
     description: "gift cards section name",
   },
+  reviews: {
+    id: "reviews_section_name",
+    defaultMessage: "Reviews",
+    description: "product reviews section name",
+  },
   home: {
     id: "4JW9iJ",
     defaultMessage: "Home",
