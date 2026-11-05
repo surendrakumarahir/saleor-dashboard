@@ -85,6 +85,7 @@ export const BlogPostFormPage: React.FC = () => {
   const [featuredImageCaption, setFeaturedImageCaption] = useState<string>("");
   const [isFeatured, setIsFeatured] = useState<boolean>(false);
   const [allowComments, setAllowComments] = useState<boolean>(false);
+  const [viewsCount, setViewsCount] = useState<number | null>(null);
 
   // SEO State
   const [seoTitle, setSeoTitle] = useState("");
@@ -254,6 +255,41 @@ export const BlogPostFormPage: React.FC = () => {
       }
     }
   }, [postData]);
+
+  // Fetch real-time view counts from storefront API
+  useEffect(() => {
+    const blogSlug = postData?.blogPost?.slug;
+
+    if (!blogSlug) return;
+
+    let isMounted = true;
+
+    const fetchPostViews = async () => {
+      try {
+        const storefrontUrl = getStorefrontUrl();
+        const res = await fetch(
+          `${storefrontUrl}/api/blogs/views?slug=${encodeURIComponent(blogSlug)}`,
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+
+          if (isMounted && data.success && typeof data.views === "number") {
+            setViewsCount(data.views);
+          }
+        }
+      } catch (err) {
+        // Non-blocking
+        console.warn("Unable to fetch post views:", err);
+      }
+    };
+
+    fetchPostViews();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [postData?.blogPost?.slug]);
 
   // Auto-generate slug from title
   const handleTitleChange = (val: string) => {
@@ -2043,6 +2079,46 @@ export const BlogPostFormPage: React.FC = () => {
               />
               <span style={{ fontWeight: 600 }}>Feature on Homepage / Spotlight</span>
             </label>
+
+            {isEdit && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  paddingTop: "14px",
+                  borderTop: "1px solid #f3f4f6",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    color: "#4b5563",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  <Eye size={14} style={{ color: "#0284c7" }} />
+                  <span>Total Article Views:</span>
+                </div>
+                <span
+                  style={{
+                    backgroundColor: "#f0f9ff",
+                    color: "#0369a1",
+                    border: "1px solid #bae6fd",
+                    padding: "2px 10px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {viewsCount !== null ? viewsCount.toLocaleString() : "..."}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Sidebar Card 2: Organization (Author, Category, Tags) */}

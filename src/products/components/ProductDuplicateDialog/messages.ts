@@ -18,12 +18,12 @@ export const duplicateDialogMessages = defineMessages({
     description: "input label",
   },
   slugLabel: {
-    id: '5Hooht',
+    id: "5Hooht",
     defaultMessage: "Product Slug / URL",
     description: "input label",
   },
   slugHelperText: {
-    id: 'TIxFTG',
+    id: "TIxFTG",
     defaultMessage: "Unique URL handle for the product (e.g. disha-neet-chemistry)",
     description: "input helper text",
   },

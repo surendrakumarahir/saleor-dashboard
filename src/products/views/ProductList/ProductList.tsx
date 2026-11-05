@@ -96,8 +96,10 @@ const ProductList = ({ params }: ProductListProps) => {
       first: VALUES_PAGINATE_BY,
     },
   });
-  const [loadProductDetails, { data: duplicateProductDetailsData, loading: loadingDuplicateProduct }] =
-  useProductDetailsLazyQuery();
+  const [
+    loadProductDetails,
+    { data: duplicateProductDetailsData, loading: loadingDuplicateProduct },
+  ] = useProductDetailsLazyQuery();
 
   const handleProductDuplicate = (id: string) => {
     setDuplicateProductId(id);
@@ -470,7 +472,7 @@ const ProductList = ({ params }: ProductListProps) => {
             status: "success",
             text: intl.formatMessage({
               defaultMessage: "Product imported from Amazon successfully!",
-              id: 'Bmji6a',
+              id: "Bmji6a",
             }),
           });
         }}

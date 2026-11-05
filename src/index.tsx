@@ -179,6 +179,8 @@ const Routes = () => {
           <AppLayout fullSize={isAppPath}>
             <ErrorBoundary
               onError={e => {
+                console.error("FATAL ERROR BOUNDARY CAUGHT:", e);
+                (window as any).__LAST_ERROR__ = e;
                 const errorId = errorTracker.captureException(e);
 
                 dispatchAppState({

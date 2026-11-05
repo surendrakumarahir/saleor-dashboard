@@ -120,7 +120,8 @@ export const ProductDuplicateDialog = ({
       onSuccess(result.productId);
       onClose();
     } else if (result.errors && result.errors.length > 0) {
-      const errorText = getProductErrorMessage(result.errors[0], intl) || "Failed to duplicate product";
+      const errorText =
+        getProductErrorMessage(result.errors[0], intl) || "Failed to duplicate product";
 
       setFormError(errorText);
       notify({

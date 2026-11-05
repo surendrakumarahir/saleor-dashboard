@@ -78,11 +78,11 @@ export const BlogAuthorsPage: React.FC = () => {
     if (!searchQuery.trim()) return authors;
     const q = searchQuery.toLowerCase();
     return authors.filter(
-      (a) =>
+      a =>
         a.displayName.toLowerCase().includes(q) ||
         a.slug.toLowerCase().includes(q) ||
         a.designation?.toLowerCase().includes(q) ||
-        a.bio?.toLowerCase().includes(q)
+        a.bio?.toLowerCase().includes(q),
     );
   }, [authors, searchQuery]);
 
@@ -134,7 +134,7 @@ export const BlogAuthorsPage: React.FC = () => {
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setAuthorForm((prev) => ({
+    setAuthorForm(prev => ({
       ...prev,
       displayName: val,
       slug: !editingAuthor ? slugify(val) : prev.slug,
@@ -279,7 +279,8 @@ export const BlogAuthorsPage: React.FC = () => {
             </span>
           </div>
           <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "14px" }}>
-            Manage educator, faculty, and academic expert profiles credited across EasyToPick articles.
+            Manage educator, faculty, and academic expert profiles credited across EasyToPick
+            articles.
           </p>
         </div>
 
@@ -347,13 +348,18 @@ export const BlogAuthorsPage: React.FC = () => {
           <Search
             size={16}
             color="#9ca3af"
-            style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
+            style={{
+              position: "absolute",
+              left: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
           />
           <input
             type="text"
             placeholder="Search authors by name, designation, or bio..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             style={{
               width: "100%",
               padding: "8px 12px 8px 36px",
@@ -389,7 +395,9 @@ export const BlogAuthorsPage: React.FC = () => {
             No authors found
           </p>
           <p style={{ fontSize: "13px", margin: "4px 0 16px 0" }}>
-            {searchQuery ? "Try refining your search term." : "Create your first author to attribute articles."}
+            {searchQuery
+              ? "Try refining your search term."
+              : "Create your first author to attribute articles."}
           </p>
           {!searchQuery && (
             <button
@@ -417,7 +425,7 @@ export const BlogAuthorsPage: React.FC = () => {
             gap: "20px",
           }}
         >
-          {filteredAuthors.map((author) => {
+          {filteredAuthors.map(author => {
             const links = (author.socialLinks as Record<string, string>) || {};
             return (
               <div
@@ -435,7 +443,14 @@ export const BlogAuthorsPage: React.FC = () => {
                 }}
               >
                 <div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", marginBottom: "12px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "14px",
+                      marginBottom: "12px",
+                    }}
+                  >
                     {author.avatar ? (
                       <img
                         src={author.avatar}
@@ -527,7 +542,14 @@ export const BlogAuthorsPage: React.FC = () => {
                   )}
 
                   {/* Social links row */}
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                    }}
+                  >
                     {links.twitter && (
                       <a
                         href={links.twitter}
@@ -597,7 +619,9 @@ export const BlogAuthorsPage: React.FC = () => {
                       </a>
                     )}
                     {!links.twitter && !links.linkedin && !links.youtube && !links.website && (
-                      <span style={{ fontSize: "11px", color: "#9ca3af" }}>No social links connected</span>
+                      <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+                        No social links connected
+                      </span>
                     )}
                   </div>
                 </div>
@@ -728,7 +752,15 @@ export const BlogAuthorsPage: React.FC = () => {
             <form onSubmit={handleSaveAuthor}>
               {/* Display Name */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Display Name *
                 </label>
                 <input
@@ -741,25 +773,37 @@ export const BlogAuthorsPage: React.FC = () => {
                     width: "100%",
                     padding: "8px 12px",
                     borderRadius: "6px",
-                    border: authorFormErrors.displayName ? "1px solid #ef4444" : "1px solid #d1d5db",
+                    border: authorFormErrors.displayName
+                      ? "1px solid #ef4444"
+                      : "1px solid #d1d5db",
                     fontSize: "13px",
                     boxSizing: "border-box",
                   }}
                 />
                 {authorFormErrors.displayName && (
-                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{authorFormErrors.displayName}</span>
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>
+                    {authorFormErrors.displayName}
+                  </span>
                 )}
               </div>
 
               {/* Slug */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   URL Slug
                 </label>
                 <input
                   type="text"
                   value={authorForm.slug}
-                  onChange={(e) => setAuthorForm((prev) => ({ ...prev, slug: e.target.value }))}
+                  onChange={e => setAuthorForm(prev => ({ ...prev, slug: e.target.value }))}
                   placeholder="dr-rajesh-sharma"
                   style={{
                     width: "100%",
@@ -771,19 +815,29 @@ export const BlogAuthorsPage: React.FC = () => {
                   }}
                 />
                 {authorFormErrors.slug && (
-                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{authorFormErrors.slug}</span>
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>
+                    {authorFormErrors.slug}
+                  </span>
                 )}
               </div>
 
               {/* Designation */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Designation / Role
                 </label>
                 <input
                   type="text"
                   value={authorForm.designation}
-                  onChange={(e) => setAuthorForm((prev) => ({ ...prev, designation: e.target.value }))}
+                  onChange={e => setAuthorForm(prev => ({ ...prev, designation: e.target.value }))}
                   placeholder="e.g. Senior NEET Biology Faculty"
                   style={{
                     width: "100%",
@@ -798,13 +852,21 @@ export const BlogAuthorsPage: React.FC = () => {
 
               {/* Avatar URL */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Avatar Image URL
                 </label>
                 <input
                   type="url"
                   value={authorForm.avatar}
-                  onChange={(e) => setAuthorForm((prev) => ({ ...prev, avatar: e.target.value }))}
+                  onChange={e => setAuthorForm(prev => ({ ...prev, avatar: e.target.value }))}
                   placeholder="https://images.unsplash.com/..."
                   style={{
                     width: "100%",
@@ -819,13 +881,21 @@ export const BlogAuthorsPage: React.FC = () => {
 
               {/* Bio */}
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#374151",
+                  }}
+                >
                   Author Bio
                 </label>
                 <textarea
                   rows={3}
                   value={authorForm.bio}
-                  onChange={(e) => setAuthorForm((prev) => ({ ...prev, bio: e.target.value }))}
+                  onChange={e => setAuthorForm(prev => ({ ...prev, bio: e.target.value }))}
                   placeholder="Academic credentials, teaching experience, mentorship background..."
                   style={{
                     width: "100%",
@@ -846,18 +916,33 @@ export const BlogAuthorsPage: React.FC = () => {
                   marginBottom: "20px",
                 }}
               >
-                <span style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "10px" }}>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#374151",
+                    marginBottom: "10px",
+                  }}
+                >
                   Social & Web Links
                 </span>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        marginBottom: "4px",
+                      }}
+                    >
                       LinkedIn URL
                     </label>
                     <input
                       type="url"
                       value={authorForm.linkedin}
-                      onChange={(e) => setAuthorForm((prev) => ({ ...prev, linkedin: e.target.value }))}
+                      onChange={e => setAuthorForm(prev => ({ ...prev, linkedin: e.target.value }))}
                       placeholder="https://linkedin.com/in/..."
                       style={{
                         width: "100%",
@@ -870,13 +955,20 @@ export const BlogAuthorsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Twitter / X URL
                     </label>
                     <input
                       type="url"
                       value={authorForm.twitter}
-                      onChange={(e) => setAuthorForm((prev) => ({ ...prev, twitter: e.target.value }))}
+                      onChange={e => setAuthorForm(prev => ({ ...prev, twitter: e.target.value }))}
                       placeholder="https://x.com/..."
                       style={{
                         width: "100%",
@@ -889,13 +981,20 @@ export const BlogAuthorsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        marginBottom: "4px",
+                      }}
+                    >
                       YouTube Channel
                     </label>
                     <input
                       type="url"
                       value={authorForm.youtube}
-                      onChange={(e) => setAuthorForm((prev) => ({ ...prev, youtube: e.target.value }))}
+                      onChange={e => setAuthorForm(prev => ({ ...prev, youtube: e.target.value }))}
                       placeholder="https://youtube.com/@..."
                       style={{
                         width: "100%",
@@ -908,13 +1007,20 @@ export const BlogAuthorsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Personal Website
                     </label>
                     <input
                       type="url"
                       value={authorForm.website}
-                      onChange={(e) => setAuthorForm((prev) => ({ ...prev, website: e.target.value }))}
+                      onChange={e => setAuthorForm(prev => ({ ...prev, website: e.target.value }))}
                       placeholder="https://easytopick.in/faculty/..."
                       style={{
                         width: "100%",
@@ -959,7 +1065,11 @@ export const BlogAuthorsPage: React.FC = () => {
                     cursor: "pointer",
                   }}
                 >
-                  {creatingAuthor || updatingAuthor ? "Saving..." : editingAuthor ? "Update Author" : "Create Author"}
+                  {creatingAuthor || updatingAuthor
+                    ? "Saving..."
+                    : editingAuthor
+                      ? "Update Author"
+                      : "Create Author"}
                 </button>
               </div>
             </form>
@@ -994,11 +1104,22 @@ export const BlogAuthorsPage: React.FC = () => {
               boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
             }}
           >
-            <h3 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px 0", color: "#111827" }}>
+            <h3
+              style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px 0", color: "#111827" }}
+            >
               Delete Author?
             </h3>
-            <p style={{ color: "#4b5563", fontSize: "14px", lineHeight: "1.5", margin: "0 0 20px 0" }}>
-              Are you sure you want to delete author <strong>&quot;{authorToDelete.displayName}&quot;</strong>? Their published articles will remain intact but without an author attribution.
+            <p
+              style={{
+                color: "#4b5563",
+                fontSize: "14px",
+                lineHeight: "1.5",
+                margin: "0 0 20px 0",
+              }}
+            >
+              Are you sure you want to delete author{" "}
+              <strong>&quot;{authorToDelete.displayName}&quot;</strong>? Their published articles
+              will remain intact but without an author attribution.
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
