@@ -18,6 +18,9 @@ const config: CodegenConfig = {
     // blogs module uses custom types not in main schema
     "!./src/blogs/queries.ts",
     "!./src/blogs/**/*.ts",
+    // reviews module uses custom types not in main schema
+    "!./src/reviews/queries.ts",
+    "!./src/reviews/**/*.ts",
   ],
   generates: {
     "./src/graphql/fragmentTypes.generated.ts": {

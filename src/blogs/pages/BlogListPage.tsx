@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@apollo/client";
-import { getBlogPostPreviewUrl } from "@dashboard/config";
+import { getBlogPostPreviewUrl, getStorefrontUrl } from "@dashboard/config";
 import { Text } from "@saleor/macaw-ui-next";
 import {
   Archive,
@@ -20,7 +20,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import type * as React from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHistory } from "react-router";
 
 import {
@@ -32,7 +32,13 @@ import {
   PUBLISH_BLOG_POST,
 } from "../queries";
 import type { BlogCategory, BlogPost } from "../types";
-import { blogAuthorsPath, blogCategoriesPath, blogCommentsPath, blogCreatePath, blogEditPath } from "../urls";
+import {
+  blogAuthorsPath,
+  blogCategoriesPath,
+  blogCommentsPath,
+  blogCreatePath,
+  blogEditPath,
+} from "../urls";
 
 export const BlogListPage: React.FC = () => {
   const history = useHistory();
@@ -78,14 +84,63 @@ export const BlogListPage: React.FC = () => {
   const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
 
   const posts: BlogPost[] = useMemo(() => {
-    return postsData?.blogPosts?.edges?.map((e: { node: BlogPost }) => e.node) || [];
+    if (!postsData?.blogPosts?.edges) return [];
+
+    return postsData.blogPosts.edges
+      .map((e: { node: BlogPost }) => e?.node)
+      .filter((node: BlogPost | null | undefined): node is BlogPost => Boolean(node && node.id));
   }, [postsData]);
 
-  const totalCount: number = postsData?.blogPosts?.totalCount || 0;
+  const totalCount: number = postsData?.blogPosts?.totalCount || posts.length;
 
   const categories: BlogCategory[] = useMemo(() => {
-    return categoriesData?.blogCategories?.edges?.map((e: { node: BlogCategory }) => e.node) || [];
+    if (!categoriesData?.blogCategories?.edges) return [];
+
+    return categoriesData.blogCategories.edges
+      .map((e: { node: BlogCategory }) => e?.node)
+      .filter((node: BlogCategory | null | undefined): node is BlogCategory => Boolean(node && node.id));
   }, [categoriesData]);
+
+  // Real-time Blog Views tracking state from Storefront API
+  const [viewsMap, setViewsMap] = useState<Record<string, number>>({});
+
+  const fetchViews = useCallback(async () => {
+    try {
+      const storefrontUrl = getStorefrontUrl();
+      const res = await fetch(`${storefrontUrl}/api/blogs/views`);
+
+      if (res.ok) {
+        const data = await res.json();
+
+        if (data?.success && data?.views && typeof data.views === "object") {
+          setViewsMap(data.views);
+        }
+      }
+    } catch (err) {
+      // Non-blocking: Storefront views endpoint may be offline
+      console.warn("Unable to fetch blog views from storefront:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchViews();
+  }, [fetchViews]);
+
+  const totalViews: number = useMemo(() => {
+    if (!Array.isArray(posts) || posts.length === 0) return 0;
+
+    return posts.reduce((sum, post) => {
+      if (!post?.slug) return sum;
+
+      const v =
+        (viewsMap && typeof viewsMap === "object" ? viewsMap[post.slug] : undefined) ??
+        post.viewsCount ??
+        0;
+      const num = typeof v === "number" && !isNaN(v) ? v : 0;
+
+      return sum + num;
+    }, 0);
+  }, [posts, viewsMap]);
 
   const handleDelete = async () => {
     if (!postToDelete) return;
@@ -194,6 +249,24 @@ export const BlogListPage: React.FC = () => {
               }}
             >
               {totalCount} Total
+            </span>
+            <span
+              style={{
+                backgroundColor: "#ecfdf5",
+                color: "#047857",
+                border: "1px solid #a7f3d0",
+                padding: "2px 10px",
+                borderRadius: "999px",
+                fontSize: "12px",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+              title="Total article views across published blogs"
+            >
+              <Eye size={12} />
+              {totalViews.toLocaleString()} Views
             </span>
           </div>
           <Text size={3} color="default2" style={{ marginTop: "4px" }}>
@@ -458,6 +531,7 @@ export const BlogListPage: React.FC = () => {
                 <th style={{ padding: "12px 16px", fontWeight: 600 }}>Category</th>
                 <th style={{ padding: "12px 16px", fontWeight: 600 }}>Author</th>
                 <th style={{ padding: "12px 16px", fontWeight: 600 }}>Status</th>
+                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Views</th>
                 <th style={{ padding: "12px 16px", fontWeight: 600 }}>Read Time</th>
                 <th style={{ padding: "12px 16px", fontWeight: 600 }}>Published Date</th>
                 <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "right" }}>
@@ -600,6 +674,34 @@ export const BlogListPage: React.FC = () => {
                         }}
                       >
                         {badge.label}
+                      </span>
+                    </td>
+
+                    {/* Views Count */}
+                    <td style={{ padding: "12px 16px" }}>
+                      <span
+                        style={{
+                          backgroundColor: "#f0f9ff",
+                          color: "#0369a1",
+                          border: "1px solid #bae6fd",
+                          padding: "3px 9px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                        title="Total views recorded on this article"
+                      >
+                        <Eye size={12} />
+                        {(
+                          (post.slug && viewsMap && typeof viewsMap === "object"
+                            ? viewsMap[post.slug]
+                            : undefined) ??
+                          post.viewsCount ??
+                          0
+                        ).toLocaleString()}
                       </span>
                     </td>
 

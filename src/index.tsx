@@ -53,6 +53,7 @@ import { apolloClient, saleorClient } from "./graphql/client";
 import { useLocationState } from "./hooks/useLocationState";
 import { commonMessages } from "./intl";
 import { NotFound } from "./NotFound";
+import { reviewSection } from "./reviews/urls";
 import { errorTracker } from "./services/errorTracking";
 import { paletteOverrides, themeOverrides } from "./themeOverrides";
 import { warehouseSection } from "./warehouses/urls";
@@ -77,6 +78,7 @@ const PageTypesSection = lazy(() => import("./modelTypes"));
 const OrdersSection = lazy(() => import("./orders"));
 const PermissionGroupSection = lazy(() => import("./permissionGroups"));
 const ProductSection = lazy(() => import("./products"));
+const ReviewSection = lazy(() => import("./reviews"));
 const ProductTypesSection = lazy(() => import("./productTypes"));
 const SearchSection = lazy(() => import("./search"));
 const ShippingSection = lazy(() => import("./shipping"));
@@ -177,6 +179,8 @@ const Routes = () => {
           <AppLayout fullSize={isAppPath}>
             <ErrorBoundary
               onError={e => {
+                console.error("FATAL ERROR BOUNDARY CAUGHT:", e);
+                (window as any).__LAST_ERROR__ = e;
                 const errorId = errorTracker.captureException(e);
 
                 dispatchAppState({
@@ -229,6 +233,11 @@ const Routes = () => {
                     permissions={[PermissionEnum.MANAGE_GIFT_CARD]}
                     path={giftCardsSectionUrlName}
                     component={GiftCardSection}
+                  />
+                  <SectionRoute
+                    permissions={[PermissionEnum.MANAGE_PRODUCTS]}
+                    path={reviewSection}
+                    component={ReviewSection}
                   />
                   <SectionRoute
                     permissions={[PermissionEnum.MANAGE_DISCOUNTS]}
