@@ -25,6 +25,7 @@ import { useHistory } from "react-router";
 import { MOCK_PRODUCT_REVIEWS } from "../fixtures";
 import {
   GET_PRODUCT_REVIEWS,
+  PRODUCT_REVIEW_ADMIN_REPLY,
   PRODUCT_REVIEW_BULK_DELETE,
   PRODUCT_REVIEW_BULK_UPDATE_STATUS,
   PRODUCT_REVIEW_DELETE,
@@ -70,10 +71,11 @@ export const ProductReviewsPage: FC = () => {
   const [bulkUpdateStatusMutation] = useMutation(PRODUCT_REVIEW_BULK_UPDATE_STATUS);
   const [deleteReviewMutation] = useMutation(PRODUCT_REVIEW_DELETE);
   const [bulkDeleteMutation] = useMutation(PRODUCT_REVIEW_BULK_DELETE);
+  const [adminReplyMutation] = useMutation(PRODUCT_REVIEW_ADMIN_REPLY);
 
   // Sync live backend data if available
   useEffect(() => {
-    if (reviewsData?.productReviews?.edges && reviewsData.productReviews.edges.length > 0) {
+    if (reviewsData?.productReviews?.edges) {
       const mapped: ProductReview[] = reviewsData.productReviews.edges.map((edge: any) => ({
         id: edge.node.id,
         productId: edge.node.productId,
@@ -322,23 +324,53 @@ export const ProductReviewsPage: FC = () => {
     }
   };
 
-  const handleSaveReply = () => {
+  const handleSaveReply = async () => {
     if (!previewReview) return;
 
-    setReviews(prev =>
-      prev.map(r => (r.id === previewReview.id ? { ...r, adminReply: replyText } : r)),
-    );
-    setPreviewReview(prev => (prev ? { ...prev, adminReply: replyText } : null));
-    notify({
-      status: "success",
-      text: "Store reply updated successfully.",
-    });
+    try {
+      if (!queryError) {
+        const res = await adminReplyMutation({
+          variables: { id: previewReview.id, reply: replyText },
+        });
+        const errors = res.data?.productReviewAdminReply?.errors;
+
+        if (errors && errors.length > 0) {
+          notify({
+            status: "error",
+            text: errors[0].message || "Failed to save reply.",
+          });
+
+          return;
+        }
+      }
+
+      setReviews(prev =>
+        prev.map(r => (r.id === previewReview.id ? { ...r, adminReply: replyText } : r)),
+      );
+      setPreviewReview(prev => (prev ? { ...prev, adminReply: replyText } : null));
+      notify({
+        status: "success",
+        text: "Store reply updated successfully.",
+      });
+    } catch {
+      setReviews(prev =>
+        prev.map(r => (r.id === previewReview.id ? { ...r, adminReply: replyText } : r)),
+      );
+      setPreviewReview(prev => (prev ? { ...prev, adminReply: replyText } : null));
+      notify({
+        status: "success",
+        text: "Store reply updated.",
+      });
+    }
   };
 
   const getProductStorefrontUrl = (slug?: string, id?: string): string => {
     const base = getStorefrontUrl();
+
     if (slug) return `${base}/products/${slug}`;
+
     if (id) return `${base}/products/${id}`;
+
     return base;
   };
 

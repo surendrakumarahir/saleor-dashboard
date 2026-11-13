@@ -96,3 +96,19 @@ export const PRODUCT_REVIEW_BULK_DELETE = gql`
   }
 `;
 
+export const PRODUCT_REVIEW_ADMIN_REPLY = gql`
+  mutation ProductReviewAdminReply($id: ID!, $reply: String!) {
+    productReviewAdminReply(id: $id, reply: $reply) {
+      review {
+        id
+        adminReply
+        updatedAt
+      }
+      errors {
+        code
+        message
+        field
+      }
+    }
+  }
+`;
