@@ -289,7 +289,7 @@ export const BlogCommentsPage: React.FC = () => {
         c.authorName.toLowerCase().includes(q) ||
         c.authorEmail.toLowerCase().includes(q) ||
         c.content.toLowerCase().includes(q) ||
-        c.slug.toLowerCase().includes(q) ||
+        (c.slug && c.slug.toLowerCase().includes(q)) ||
         (c.blogTitle && c.blogTitle.toLowerCase().includes(q));
 
       return matchesStatus && matchesSearch;

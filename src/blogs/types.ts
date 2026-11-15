@@ -131,6 +131,7 @@ export interface BlogPost {
   ogImage?: string;
   isFeatured?: boolean;
   readingTimeMinutes?: number;
+  viewsCount?: number;
   allowComments?: boolean;
   publishedAt?: string;
   scheduledAt?: string;
