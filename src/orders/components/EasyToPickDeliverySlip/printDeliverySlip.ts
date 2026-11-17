@@ -166,7 +166,7 @@ export const generateDeliverySlipHtml = (data: EasyToPickDeliverySlipData): stri
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #111827; padding-bottom: 12px; margin-bottom: 12px; gap: 16px;">
       <div style="display: flex; flex-direction: column; gap: 3px;">
         <img src="${EASYTOPICK_LOGO_DATA_URI}" alt="EasyToPick Bookstore" style="height: 44px; width: auto; object-fit: contain; align-self: flex-start;" />
-        <div style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; color: #374151; text-transform: uppercase;">YOUR ONLINE BOOKSTORE</div>
+        <div style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; color: #374151; text-transform: uppercase;">SHOP SMART, SAVE MORE...</div>
         <div style="font-size: 11px; font-weight: 700; color: #111827;">easytopick.in &nbsp;|&nbsp; Kota, Rajasthan</div>
       </div>
 

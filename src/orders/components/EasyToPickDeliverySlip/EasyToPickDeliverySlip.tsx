@@ -96,7 +96,7 @@ export const EasyToPickDeliverySlip: FC<EasyToPickDeliverySlipProps> = ({
       <div className={styles.header}>
         <div className={styles.brandCol}>
           <img src={EASYTOPICK_LOGO_DATA_URI} alt="EasyToPick Bookstore" className={styles.logo} />
-          <div className={styles.brandSubtitle}>YOUR ONLINE BOOKSTORE</div>
+          <div className={styles.brandSubtitle}>SHOP SMART, SAVE MORE...</div>
           <div className={styles.brandWeb}>easytopick.in &nbsp;|&nbsp; Kota, Rajasthan</div>
         </div>
 

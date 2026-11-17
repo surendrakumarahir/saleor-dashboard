@@ -127,8 +127,8 @@ export const mapOrderToDeliverySlip = (order: any): EasyToPickDeliverySlipData =
 
     // Sender
     senderName: "EasyToPick",
-    senderTagline: "Your Online Bookstore",
-    senderAddress: "Kota, Rajasthan, India",
+    senderTagline: "SHOP SMART, SAVE MORE...",
+    senderAddress: "24 A , Krishna Nagar Rangbadi, Kota",
     senderCity: "Kota",
     senderState: "Rajasthan",
     senderPincode: "324005",
