@@ -63,23 +63,25 @@ const ErrorPage = ({ onBack, onRefresh }: ErrorPageProps) => {
               typeof window !== "undefined" &&
               Boolean((window as any).__LAST_ERROR__) && (
                 <Box
-                marginTop={4}
-                padding={3}
-                style={{
-                  backgroundColor: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: "6px",
-                  color: "#991b1b",
-                  fontSize: "12px",
-                  fontFamily: "monospace",
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                <strong>Error: </strong>
-                {String((window as any).__LAST_ERROR__?.message || (window as any).__LAST_ERROR__)}
-              </Box>
-            )}
+                  marginTop={4}
+                  padding={3}
+                  style={{
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: "6px",
+                    color: "#991b1b",
+                    fontSize: "12px",
+                    fontFamily: "monospace",
+                    wordBreak: "break-word",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  <strong>Error: </strong>
+                  {String(
+                    (window as any).__LAST_ERROR__?.message || (window as any).__LAST_ERROR__,
+                  )}
+                </Box>
+              )}
             {!!errorTrackingId && (
               <Box marginTop={4}>
                 <Text

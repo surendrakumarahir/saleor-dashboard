@@ -93,6 +93,7 @@ interface OrderDetailsPageProps {
   onInvoiceGenerate: () => any;
   onInvoiceSend: (invoiceId: string) => any;
   onInvoicePrint?: () => any;
+  onDeliverySlipPrint?: () => any;
   onTransactionAction: (transactionId: string, actionType: TransactionActionEnum) => any;
   onAddManualTransaction: () => any;
   onRefundAdd: () => void;
@@ -124,6 +125,7 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
     onInvoiceGenerate,
     onInvoiceSend,
     onInvoicePrint,
+    onDeliverySlipPrint,
     onOrderReturn,
     onOrderLineAdd,
     onOrderLineChange,
@@ -181,6 +183,20 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
         onSelect: onOrderReturn,
       },
       shouldExist: hasAnyItemsReplaceable(order),
+    },
+    {
+      item: {
+        label: "Print Delivery Slip",
+        onSelect: onDeliverySlipPrint,
+      },
+      shouldExist: Boolean(onDeliverySlipPrint),
+    },
+    {
+      item: {
+        label: "Print EasyToPick Invoice",
+        onSelect: onInvoicePrint,
+      },
+      shouldExist: Boolean(onInvoicePrint),
     },
   ]);
   const { ORDER_DETAILS_MORE_ACTIONS, ORDER_DETAILS_WIDGETS } = useExtensions(
@@ -349,6 +365,7 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
                 onBillingAddressEdit={onBillingAddressEdit}
                 onShippingAddressEdit={onShippingAddressEdit}
                 onProfileView={onProfileView}
+                onDeliverySlipPrint={onDeliverySlipPrint}
               />
               <CardSpacer />
               <Divider />
@@ -363,6 +380,7 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
                     onInvoiceGenerate={onInvoiceGenerate}
                     onInvoiceSend={onInvoiceSend}
                     onInvoicePrint={onInvoicePrint}
+                    onDeliverySlipPrint={onDeliverySlipPrint}
                   />
                   <CardSpacer />
                   <Divider />

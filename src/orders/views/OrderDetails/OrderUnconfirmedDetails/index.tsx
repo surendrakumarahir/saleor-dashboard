@@ -45,6 +45,7 @@ import {
   getStringOrPlaceholder,
 } from "../../../../misc";
 import { productUrl } from "../../../../products/urls";
+import { EasyToPickDeliverySlipModal } from "../../../components/EasyToPickDeliverySlip/EasyToPickDeliverySlipModal";
 import { EasyToPickInvoiceModal } from "../../../components/EasyToPickInvoice/EasyToPickInvoiceModal";
 import OrderAddressFields from "../../../components/OrderAddressFields/OrderAddressFields";
 import OrderCancelDialog from "../../../components/OrderCancelDialog";
@@ -166,6 +167,7 @@ export const OrderUnconfirmedDetails = ({
   }>({
     open: false,
   });
+  const [deliverySlipModalOpen, setDeliverySlipModalOpen] = useState(false);
   const handleCustomerChangeAddresses = async (
     data: Partial<OrderCustomerAddressesEditDialogOutput>,
   ): Promise<FetchResult<OrderUpdateMutation>> =>
@@ -320,6 +322,7 @@ export const OrderUnconfirmedDetails = ({
                 open: true,
               })
             }
+            onDeliverySlipPrint={() => setDeliverySlipModalOpen(true)}
             onInvoiceSend={id => openModal("invoice-send", { id })}
             onRefundAdd={() => openModal("add-refund")}
             onSubmit={handleSubmit}
@@ -568,6 +571,11 @@ export const OrderUnconfirmedDetails = ({
         onClose={() => setInvoiceModalState({ open: false })}
         order={order}
         selectedInvoiceId={invoiceModalState.invoiceId}
+      />
+      <EasyToPickDeliverySlipModal
+        open={deliverySlipModalOpen}
+        onClose={() => setDeliverySlipModalOpen(false)}
+        order={order}
       />
     </>
   );

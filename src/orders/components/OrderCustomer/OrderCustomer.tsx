@@ -17,7 +17,7 @@ import { buttonMessages } from "@dashboard/intl";
 import { orderListUrlWithCustomerEmail, orderListUrlWithCustomerId } from "@dashboard/orders/urls";
 import { type FetchMoreProps, type RelayToFlat } from "@dashboard/types";
 import { Box, Button, Skeleton, sprinkles, Text } from "@saleor/macaw-ui-next";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, Truck } from "lucide-react";
 import * as React from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
@@ -45,6 +45,7 @@ interface OrderCustomerProps extends Partial<FetchMoreProps> {
   onProfileView: () => void;
   onBillingAddressEdit?: () => void;
   onShippingAddressEdit?: () => void;
+  onDeliverySlipPrint?: () => void;
 }
 
 const formatAddressForClipboard = (address: AddressType): string => {
@@ -112,6 +113,7 @@ const OrderCustomer = (props: OrderCustomerProps) => {
     onFetchMore: onFetchMoreUsers,
     onProfileView,
     onShippingAddressEdit,
+    onDeliverySlipPrint,
   } = props;
 
   const intl = useIntl();
@@ -296,16 +298,29 @@ const OrderCustomer = (props: OrderCustomerProps) => {
               <Text color="default2" size={4}>
                 <FormattedMessage id="ZpVtCa" defaultMessage="Shipping address" />
               </Text>
-              {canEditAddresses && (
-                <Button
-                  data-test-id="edit-shipping-address"
-                  variant="secondary"
-                  onClick={onShippingAddressEdit}
-                  disabled={!onShippingAddressEdit && user === undefined}
-                >
-                  <FormattedMessage {...buttonMessages.edit} />
-                </Button>
-              )}
+              <Box display="flex" gap={2}>
+                {onDeliverySlipPrint && shippingAddress && (
+                  <Button
+                    data-test-id="print-delivery-slip-customer"
+                    variant="secondary"
+                    onClick={onDeliverySlipPrint}
+                    title="Print Delivery Slip"
+                  >
+                    <Truck size={14} />
+                    <span>Delivery Slip</span>
+                  </Button>
+                )}
+                {canEditAddresses && (
+                  <Button
+                    data-test-id="edit-shipping-address"
+                    variant="secondary"
+                    onClick={onShippingAddressEdit}
+                    disabled={!onShippingAddressEdit && user === undefined}
+                  >
+                    <FormattedMessage {...buttonMessages.edit} />
+                  </Button>
+                )}
+              </Box>
             </Box>
             {shippingAddress === undefined ? (
               <Skeleton />

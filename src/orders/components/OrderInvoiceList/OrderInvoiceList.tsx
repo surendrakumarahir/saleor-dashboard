@@ -8,7 +8,7 @@ import { buttonMessages } from "@dashboard/intl";
 import { TableBody, TableCell } from "@material-ui/core";
 import { makeStyles } from "@saleor/macaw-ui";
 import { Box, Button, Skeleton, Text } from "@saleor/macaw-ui-next";
-import { Printer } from "lucide-react";
+import { Printer, Truck } from "lucide-react";
 import { FormattedMessage, useIntl } from "react-intl";
 
 const useStyles = makeStyles(
@@ -44,10 +44,18 @@ interface OrderInvoiceListProps {
   onInvoiceClick: (invoiceId: string) => void;
   onInvoiceSend: (invoiceId: string) => void;
   onInvoicePrint?: () => void;
+  onDeliverySlipPrint?: () => void;
 }
 
 const OrderInvoiceList = (props: OrderInvoiceListProps) => {
-  const { invoices, onInvoiceGenerate, onInvoiceClick, onInvoiceSend, onInvoicePrint } = props;
+  const {
+    invoices,
+    onInvoiceGenerate,
+    onInvoiceClick,
+    onInvoiceSend,
+    onInvoicePrint,
+    onDeliverySlipPrint,
+  } = props;
   const classes = useStyles(props);
   const intl = useIntl();
   const generatedInvoices = invoices?.filter(invoice => invoice.status === "SUCCESS");
@@ -64,6 +72,12 @@ const OrderInvoiceList = (props: OrderInvoiceListProps) => {
         </DashboardCard.Title>
         <DashboardCard.Toolbar>
           <Box display="flex" gap={2}>
+            {onDeliverySlipPrint && (
+              <Button variant="secondary" onClick={onDeliverySlipPrint}>
+                <Truck size={16} />
+                <span>Delivery Slip</span>
+              </Button>
+            )}
             {onInvoicePrint && (
               <Button variant="secondary" onClick={onInvoicePrint}>
                 <Printer size={16} />
@@ -117,6 +131,7 @@ const OrderInvoiceList = (props: OrderInvoiceListProps) => {
                     className={classes.colAction}
                     onClick={e => {
                       e.stopPropagation();
+
                       if (onInvoiceClick) {
                         onInvoiceClick(invoice.id);
                       }

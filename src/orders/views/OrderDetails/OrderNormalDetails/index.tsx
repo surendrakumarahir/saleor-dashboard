@@ -52,6 +52,7 @@ import { useIntl } from "react-intl";
 
 import { customerUrl } from "../../../../customers/urls";
 import { productUrl } from "../../../../products/urls";
+import { EasyToPickDeliverySlipModal } from "../../../components/EasyToPickDeliverySlip/EasyToPickDeliverySlipModal";
 import { EasyToPickInvoiceModal } from "../../../components/EasyToPickInvoice/EasyToPickInvoiceModal";
 import OrderAddressFields from "../../../components/OrderAddressFields/OrderAddressFields";
 import OrderCancelDialog from "../../../components/OrderCancelDialog";
@@ -169,6 +170,7 @@ export const OrderNormalDetails = ({
   }>({
     open: false,
   });
+  const [deliverySlipModalOpen, setDeliverySlipModalOpen] = useState(false);
   const [transactionReference, setTransactionReference] = useState("");
   const [currentApproval, setCurrentApproval] = useState<ApprovalState | null>(null);
   const [stockExceeded, setStockExceeded] = useState(false);
@@ -311,6 +313,7 @@ export const OrderNormalDetails = ({
             open: true,
           })
         }
+        onDeliverySlipPrint={() => setDeliverySlipModalOpen(true)}
         onInvoiceSend={id => openModal("invoice-send", { id })}
         onRefundAdd={() => openModal("add-refund")}
         onSubmit={handleSubmit}
@@ -545,6 +548,11 @@ export const OrderNormalDetails = ({
         onClose={() => setInvoiceModalState({ open: false })}
         order={order}
         selectedInvoiceId={invoiceModalState.invoiceId}
+      />
+      <EasyToPickDeliverySlipModal
+        open={deliverySlipModalOpen}
+        onClose={() => setDeliverySlipModalOpen(false)}
+        order={order}
       />
     </>
   );
