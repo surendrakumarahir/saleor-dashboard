@@ -350,16 +350,195 @@
   border-top: 1.5px solid #111827;
 }
 
+/* Compact Mode for 2-on-1 A4 printing */
+.compact {
+  padding: 8px 12px;
+}
+
+.compact .header {
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  gap: 10px;
+}
+
+.compact .logo {
+  height: 32px;
+}
+
+.compact .brandSubtitle {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+
+.compact .brandWeb {
+  font-size: 9.5px;
+}
+
+.compact .slipTitleBadge {
+  font-size: 9.5px;
+  padding: 2px 6px;
+}
+
+.compact .orderNumText {
+  font-size: 14.5px;
+}
+
+.compact .paymentBannerPrepaid,
+.compact .paymentBannerCod {
+  padding: 4px 8px;
+  margin-bottom: 6px;
+}
+
+.compact .paymentBadgePrepaid,
+.compact .paymentBadgeCod {
+  font-size: 11.5px;
+}
+
+.compact .paymentCollectTextPrepaid {
+  font-size: 11.5px;
+}
+
+.compact .paymentCollectTextCod {
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.compact .addressGrid {
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.compact .deliverToBox,
+.compact .dispatchedFromBox {
+  padding: 6px 8px;
+}
+
+.compact .boxHeaderDeliver,
+.compact .boxHeaderFrom {
+  font-size: 9.5px;
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+}
+
+.compact .recipientName {
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.compact .addressText {
+  font-size: 11px;
+  line-height: 1.35;
+  margin-bottom: 1px;
+}
+
+.compact .pincodeBadge {
+  font-size: 11px;
+  padding: 1px 6px;
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+
+.compact .phonePill {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.compact .customerNoteBox {
+  font-size: 10px;
+  padding: 3px 5px;
+  margin-top: 3px;
+}
+
+.compact .senderName {
+  font-size: 12.5px;
+  margin-bottom: 1px;
+}
+
+.compact .senderTagline {
+  font-size: 9px;
+  margin-bottom: 3px;
+}
+
+.compact .senderAddress,
+.compact .senderCityStatePin {
+  font-size: 10.5px;
+  line-height: 1.35;
+  margin-bottom: 1px;
+}
+
+.compact .senderContact {
+  font-size: 10px;
+  line-height: 1.35;
+  margin-top: 3px;
+  padding-top: 3px;
+}
+
+.compact .itemsTable {
+  margin-bottom: 4px;
+  font-size: 10.5px;
+}
+
+.compact .itemsTable th {
+  padding: 3px 6px;
+  font-size: 9.5px;
+}
+
+.compact .itemsTable td {
+  padding: 3px 6px;
+  font-size: 10.5px;
+}
+
+.compact .colSku {
+  width: 90px;
+}
+
+.compact .colQty {
+  width: 44px;
+}
+
+.compact .totalRow td {
+  padding: 3px 6px;
+  font-size: 10px;
+}
+
+/* Cut line divider between slips */
+.cutLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0;
+  border-top: 1.5px dashed #64748b;
+  position: relative;
+  user-select: none;
+}
+
+.cutLineBadge {
+  background-color: #f8fafc;
+  padding: 2px 12px;
+  margin-top: -11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm 10mm;
+    margin: 6mm 8mm;
   }
 
   .slipWrapper {
     border: 1.5px dashed #000000;
     max-width: 100%;
-    padding: 16px 20px;
+    padding: 10px 14px;
     box-shadow: none !important;
   }
 }

@@ -12070,6 +12070,13 @@ export type ModelsOfTypeQueryVariables = Exact<{
 
 export type ModelsOfTypeQuery = { __typename: 'Query', pages: { __typename: 'PageCountableConnection', edges: Array<{ __typename: 'PageCountableEdge', node: { __typename: 'Page', id: string, title: string } }> } | null };
 
+export type DeliverySlipOrderQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DeliverySlipOrderQuery = { __typename: 'Query', order: { __typename: 'Order', id: string, number: string, created: any, isPaid: boolean, paymentStatus: PaymentChargeStatusEnum, chargeStatus: OrderChargeStatusEnum, customerNote: string, userEmail: string | null, shippingMethodName: string | null, shippingAddress: { __typename: 'Address', id: string, firstName: string, lastName: string, companyName: string, streetAddress1: string, streetAddress2: string, city: string, countryArea: string, postalCode: string, phone: string | null, country: { __typename: 'CountryDisplay', code: string, country: string } } | null, billingAddress: { __typename: 'Address', id: string, firstName: string, lastName: string, companyName: string, streetAddress1: string, streetAddress2: string, city: string, countryArea: string, postalCode: string, phone: string | null, country: { __typename: 'CountryDisplay', code: string, country: string } } | null, total: { __typename: 'TaxedMoney', gross: { __typename: 'Money', amount: number, currency: string } }, totalCharged: { __typename: 'Money', amount: number }, lines: Array<{ __typename: 'OrderLine', id: string, productName: string, productSku: string | null, quantity: number, variant: { __typename: 'ProductVariant', id: string, name: string } | null }> } | null };
+
 export type OrderCancelMutationVariables = Exact<{
   id: Scalars['ID'];
 }>;

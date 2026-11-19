@@ -11672,6 +11672,100 @@ export function useModelsOfTypeLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type ModelsOfTypeQueryHookResult = ReturnType<typeof useModelsOfTypeQuery>;
 export type ModelsOfTypeLazyQueryHookResult = ReturnType<typeof useModelsOfTypeLazyQuery>;
 export type ModelsOfTypeQueryResult = Apollo.QueryResult<Types.ModelsOfTypeQuery, Types.ModelsOfTypeQueryVariables>;
+export const DeliverySlipOrderDocument = gql`
+    query DeliverySlipOrder($id: ID!) {
+  order(id: $id) {
+    id
+    number
+    created
+    isPaid
+    paymentStatus
+    chargeStatus
+    customerNote
+    userEmail
+    shippingAddress {
+      id
+      firstName
+      lastName
+      companyName
+      streetAddress1
+      streetAddress2
+      city
+      countryArea
+      postalCode
+      phone
+      country {
+        code
+        country
+      }
+    }
+    billingAddress {
+      id
+      firstName
+      lastName
+      companyName
+      streetAddress1
+      streetAddress2
+      city
+      countryArea
+      postalCode
+      phone
+      country {
+        code
+        country
+      }
+    }
+    total {
+      gross {
+        amount
+        currency
+      }
+    }
+    totalCharged {
+      amount
+    }
+    shippingMethodName
+    lines {
+      id
+      productName
+      productSku
+      quantity
+      variant {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useDeliverySlipOrderQuery__
+ *
+ * To run a query within a React component, call `useDeliverySlipOrderQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDeliverySlipOrderQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDeliverySlipOrderQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeliverySlipOrderQuery(baseOptions: ApolloReactHooks.QueryHookOptions<Types.DeliverySlipOrderQuery, Types.DeliverySlipOrderQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<Types.DeliverySlipOrderQuery, Types.DeliverySlipOrderQueryVariables>(DeliverySlipOrderDocument, options);
+      }
+export function useDeliverySlipOrderLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<Types.DeliverySlipOrderQuery, Types.DeliverySlipOrderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<Types.DeliverySlipOrderQuery, Types.DeliverySlipOrderQueryVariables>(DeliverySlipOrderDocument, options);
+        }
+export type DeliverySlipOrderQueryHookResult = ReturnType<typeof useDeliverySlipOrderQuery>;
+export type DeliverySlipOrderLazyQueryHookResult = ReturnType<typeof useDeliverySlipOrderLazyQuery>;
+export type DeliverySlipOrderQueryResult = Apollo.QueryResult<Types.DeliverySlipOrderQuery, Types.DeliverySlipOrderQueryVariables>;
 export const OrderCancelDocument = gql`
     mutation OrderCancel($id: ID!) {
   orderCancel(id: $id) {

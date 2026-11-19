@@ -1,4 +1,5 @@
 import { encodeCode128B, generateBarcodeSvg } from "./barcode";
+import { generateTwoUpDeliverySlipHtml } from "./printDeliverySlip";
 import { formatSlipDate, formatSlipMoney, mapOrderToDeliverySlip } from "./utils";
 
 describe("EasyToPick Delivery Slip utils & barcode", () => {
@@ -120,5 +121,48 @@ describe("EasyToPick Delivery Slip utils & barcode", () => {
     expect(svgResult.svgString).toContain("8876");
     expect(svgResult.totalWidth).toBeGreaterThan(0);
     expect(svgResult.totalHeight).toBeGreaterThan(0);
+  });
+
+  it("generates 2-on-1 A4 HTML containing both Order #127 and Order #128 on the same page", () => {
+    const order127 = mapOrderToDeliverySlip({
+      id: "order-127",
+      number: "127",
+      isPaid: true,
+      paymentStatus: "FULLY_PAID",
+      shippingAddress: {
+        firstName: "Aman",
+        lastName: "Singh",
+        city: "Kota",
+        countryArea: "Rajasthan",
+        postalCode: "324005",
+      },
+      lines: [{ productName: "Physics Vol 1", quantity: 1 }],
+    });
+
+    const order128 = mapOrderToDeliverySlip({
+      id: "order-128",
+      number: "128",
+      isPaid: false,
+      paymentStatus: "NOT_CHARGED",
+      billingAddress: {
+        firstName: "Priya",
+        lastName: "Sharma",
+        city: "Jaipur",
+        countryArea: "Rajasthan",
+        postalCode: "302001",
+      },
+      lines: [{ productName: "Chemistry Vol 2", quantity: 2 }],
+      total: { gross: { amount: 580, currency: "INR" } },
+    });
+
+    const html = generateTwoUpDeliverySlipHtml([order127, order128]);
+
+    expect(html).toContain("ORDER #127");
+    expect(html).toContain("ORDER #128");
+    expect(html).toContain("A4 portrait");
+    expect(html).toContain("page-sheet");
+    expect(html).toContain("✂");
+    expect(html).toContain("Aman Singh");
+    expect(html).toContain("Priya Sharma");
   });
 });

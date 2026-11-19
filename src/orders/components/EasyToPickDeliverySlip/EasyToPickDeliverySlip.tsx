@@ -1,11 +1,22 @@
 import { EASYTOPICK_LOGO_DATA_URI } from "@dashboard/orders/components/EasyToPickInvoice/logoDataUri";
-import { AlertCircle, CheckCircle2, Phone } from "lucide-react";
+import { AlertCircle, CheckCircle2, Phone, Scissors } from "lucide-react";
 import { type CSSProperties, type FC, type RefObject } from "react";
 
 import { encodeCode128B } from "./barcode";
 import styles from "./EasyToPickDeliverySlip.module.css";
 import { type EasyToPickDeliverySlipData } from "./types";
 import { formatSlipMoney } from "./utils";
+
+export const DeliverySlipCutLine: FC<{ label?: string }> = ({
+  label = "✂ CUT HERE (2 SLIPS PER A4 SHEET) ✂",
+}) => (
+  <div className={styles.cutLine}>
+    <span className={styles.cutLineBadge}>
+      <Scissors size={12} />
+      <span>{label}</span>
+    </span>
+  </div>
+);
 
 interface BarcodeComponentProps {
   value: string;
@@ -76,12 +87,14 @@ const DeliverySlipBarcode: FC<BarcodeComponentProps> = ({
 interface EasyToPickDeliverySlipProps {
   data: EasyToPickDeliverySlipData;
   className?: string;
+  compact?: boolean;
   containerRef?: RefObject<HTMLDivElement>;
 }
 
 export const EasyToPickDeliverySlip: FC<EasyToPickDeliverySlipProps> = ({
   data,
   className,
+  compact = false,
   containerRef,
 }) => {
   const isPrepaid = data.paymentStatus === "PREPAID";
@@ -89,7 +102,7 @@ export const EasyToPickDeliverySlip: FC<EasyToPickDeliverySlipProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`${styles.slipWrapper} ${className || ""}`}
+      className={`${styles.slipWrapper} ${compact ? styles.compact : ""} ${className || ""}`}
       id="easytopick-delivery-slip-root"
     >
       {/* Header */}
@@ -106,8 +119,8 @@ export const EasyToPickDeliverySlip: FC<EasyToPickDeliverySlipProps> = ({
           <div className={styles.barcodeContainer}>
             <DeliverySlipBarcode
               value={data.orderNumber}
-              height={34}
-              barWidth={1.3}
+              height={compact ? 24 : 34}
+              barWidth={compact ? 1.15 : 1.3}
               showText={false}
             />
           </div>
@@ -118,7 +131,7 @@ export const EasyToPickDeliverySlip: FC<EasyToPickDeliverySlipProps> = ({
       {isPrepaid ? (
         <div className={styles.paymentBannerPrepaid}>
           <div className={styles.paymentBadgePrepaid}>
-            <CheckCircle2 size={18} color="#111827" />
+            <CheckCircle2 size={compact ? 15 : 18} color="#111827" />
             <span>PREPAID PARCEL — DO NOT COLLECT CASH</span>
           </div>
           <div className={styles.paymentCollectTextPrepaid}>COLLECT: ₹ 0.00</div>
@@ -126,7 +139,7 @@ export const EasyToPickDeliverySlip: FC<EasyToPickDeliverySlipProps> = ({
       ) : (
         <div className={styles.paymentBannerCod}>
           <div className={styles.paymentBadgeCod}>
-            <AlertCircle size={18} color="#111827" />
+            <AlertCircle size={compact ? 15 : 18} color="#111827" />
             <span>CASH ON DELIVERY (COD)</span>
           </div>
           <div className={styles.paymentCollectTextCod}>
@@ -148,18 +161,17 @@ export const EasyToPickDeliverySlip: FC<EasyToPickDeliverySlipProps> = ({
             </div>
           ))}
 
-          {data.pincode && (
-            <div>
-              <span className={styles.pincodeBadge}>PIN: {data.pincode}</span>
-            </div>
-          )}
-
-          {data.phone && (
-            <div>
-              <span className={styles.phonePill}>
-                <Phone size={13} color="#111827" />
-                <span>Contact: {data.phone}</span>
-              </span>
+          {(data.pincode || data.phone) && (
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+              {data.pincode && (
+                <span className={styles.pincodeBadge}>PIN: {data.pincode}</span>
+              )}
+              {data.phone && (
+                <span className={styles.phonePill}>
+                  <Phone size={compact ? 11 : 13} color="#111827" />
+                  <span>Contact: {data.phone}</span>
+                </span>
+              )}
             </div>
           )}
 

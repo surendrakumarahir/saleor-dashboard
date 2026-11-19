@@ -38,6 +38,7 @@ import { Box, Button, Tooltip } from "@saleor/macaw-ui-next";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
+import { BulkDeliverySlipModal } from "../EasyToPickDeliverySlip/BulkDeliverySlipModal";
 import OrderLimitReached from "../OrderLimitReached";
 import { OrderListDatagrid } from "../OrderListDatagrid";
 
@@ -78,6 +79,7 @@ const OrderListPage = ({
   const hasAccessibleChannels = userAccessibleChannels.length > 0;
   const limitsReached = isLimitReached(limits, "orders");
   const [isFilterPresetOpen, setFilterPresetOpen] = useState(false);
+  const [isBulkDeliverySlipOpen, setBulkDeliverySlipOpen] = useState(false);
   const { ORDER_OVERVIEW_CREATE, ORDER_OVERVIEW_MORE_ACTIONS } = useExtensions(
     extensionMountPoints.ORDER_LIST,
   );
@@ -130,9 +132,21 @@ const OrderListPage = ({
           </Box>
 
           <Box display="flex" alignItems="center" gap={2}>
+            <Button
+              variant="secondary"
+              onClick={() => setBulkDeliverySlipOpen(true)}
+              data-test-id="print-delivery-slips-button"
+            >
+              Print Slips (2 per A4)
+            </Button>
+
             {!!onSettingsOpen && (
               <TopNav.Menu
                 items={[
+                  {
+                    label: "Print Delivery Slips (2 per A4)",
+                    onSelect: () => setBulkDeliverySlipOpen(true),
+                  },
                   {
                     label: intl.formatMessage({
                       id: "vEwjub",
@@ -226,6 +240,11 @@ const OrderListPage = ({
         />
         <OrderListDatagrid {...listProps} hasRowHover={!isFilterPresetOpen} rowAnchor={orderUrl} />
       </DashboardCard>
+
+      <BulkDeliverySlipModal
+        open={isBulkDeliverySlipOpen}
+        onClose={() => setBulkDeliverySlipOpen(false)}
+      />
     </ListPageLayout>
   );
 };
