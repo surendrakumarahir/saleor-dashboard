@@ -333,7 +333,7 @@ export const EasyToPickDeliverySlipModal: FC<EasyToPickDeliverySlipModalProps> =
               backgroundColor: "#ffffff",
               boxShadow: "0 4px 24px rgba(0, 0, 0, 0.1)",
               borderRadius: "6px",
-              padding: "16px",
+              padding: "24px 36px",
             }}
           >
             {/* Top Slip (Order 1) */}

@@ -86,7 +86,7 @@ export const generateDeliverySlipCardHtml = (
     : "";
 
   return `
-    <div class="slip-card" style="box-sizing: border-box; width: 100%; border: 1.5px dashed #111827; border-radius: 4px; padding: ${isCompact ? "8px 12px" : "18px 22px"}; background-color: #ffffff; page-break-inside: avoid; break-inside: avoid;">
+    <div class="slip-card" style="box-sizing: border-box; width: 100%; max-width: 172mm; margin: 0 auto; border: 1.5px dashed #111827; border-radius: 4px; padding: ${isCompact ? "8px 16px" : "18px 24px"}; background-color: #ffffff; page-break-inside: avoid; break-inside: avoid;">
       <!-- Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #111827; padding-bottom: ${isCompact ? "6px" : "12px"}; margin-bottom: ${isCompact ? "6px" : "12px"}; gap: 12px;">
         <div style="display: flex; flex-direction: column; gap: 2px;">
@@ -172,7 +172,7 @@ export const generateTwoUpDeliverySlipHtml = (slips: EasyToPickDeliverySlipData[
 
     const cardAHtml = generateDeliverySlipCardHtml(slipA, { compact: true });
     const cutDividerHtml = `
-      <div class="cut-divider" style="height: 16px; margin: 4px 0; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 11px; color: #475569; letter-spacing: 2px; overflow: hidden; user-select: none;">
+      <div class="cut-divider" style="max-width: 172mm; margin: 4px auto; height: 16px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 11px; color: #475569; letter-spacing: 2px; overflow: hidden; user-select: none;">
         ✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂
       </div>
     `;
@@ -180,7 +180,7 @@ export const generateTwoUpDeliverySlipHtml = (slips: EasyToPickDeliverySlipData[
     const cardBHtml = slipB
       ? generateDeliverySlipCardHtml(slipB, { compact: true })
       : `
-        <div style="box-sizing: border-box; width: 100%; border: 1.5px dashed #cbd5e1; border-radius: 4px; padding: 24px; min-height: 120mm; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; text-align: center;">
+        <div style="box-sizing: border-box; width: 100%; max-width: 172mm; margin: 0 auto; border: 1.5px dashed #cbd5e1; border-radius: 4px; padding: 24px; min-height: 120mm; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; text-align: center;">
           <div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px;">[ UNUSED HALF SHEET ]</div>
           <div style="font-size: 11px; color: #94a3b8;">Cut along the dashed line to save A5 paper for future dispatches.</div>
         </div>
@@ -205,7 +205,7 @@ export const generateTwoUpDeliverySlipHtml = (slips: EasyToPickDeliverySlipData[
   <style>
     @page {
       size: A4 portrait;
-      margin: 6mm 8mm;
+      margin: 8mm 18mm;
     }
     * {
       box-sizing: border-box;
@@ -220,7 +220,7 @@ export const generateTwoUpDeliverySlipHtml = (slips: EasyToPickDeliverySlipData[
       padding: 16px;
     }
     .print-actions {
-      max-width: 194mm;
+      max-width: 172mm;
       margin: 0 auto 14px auto;
       display: flex;
       justify-content: space-between;
@@ -260,9 +260,9 @@ export const generateTwoUpDeliverySlipHtml = (slips: EasyToPickDeliverySlipData[
     }
     .page-sheet {
       width: 100%;
-      max-width: 194mm;
+      max-width: 172mm;
       min-height: 240mm;
-      max-height: 283mm;
+      max-height: 281mm;
       margin: 0 auto 16px auto;
       box-sizing: border-box;
       display: flex;
@@ -271,7 +271,7 @@ export const generateTwoUpDeliverySlipHtml = (slips: EasyToPickDeliverySlipData[
       page-break-after: always;
       break-after: page;
       background-color: #ffffff;
-      padding: 4px;
+      padding: 0;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       border-radius: 4px;
     }
@@ -290,8 +290,9 @@ export const generateTwoUpDeliverySlipHtml = (slips: EasyToPickDeliverySlipData[
       }
       .page-sheet {
         margin: 0 auto;
+        max-width: 172mm;
         min-height: 240mm;
-        max-height: 283mm;
+        max-height: 281mm;
         padding: 0;
         box-shadow: none !important;
         border-radius: 0;
