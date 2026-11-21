@@ -1,0 +1,21 @@
+services:
+  saleor-dashboard:
+    container_name: saleor-dashboard
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        API_URL: https://api.easytopick.in/graphql/
+        APP_MOUNT_URI: /
+        STATIC_URL: /
+    restart: always
+    expose:
+      - "80"
+    ports:
+      - "3002:80"
+    networks:
+      - saleor_default
+
+networks:
+  saleor_default:
+    external: true
