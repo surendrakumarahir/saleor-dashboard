@@ -1,0 +1,45 @@
+name: Deploy Dashboard to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "🚀 Starting automated deployment for branch: ${{ github.ref_name }}..."
+            cd /app/saleor-dashboard
+
+            # 1. Fetch latest commits and checkout the pushed branch
+            echo "📥 Fetching latest changes from git..."
+            git fetch origin ${{ github.ref_name }}
+            git checkout ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
+
+            # 2. Rebuild and launch the dashboard container
+            echo "🔨 Building and restarting Saleor Dashboard..."
+            docker compose up -d --build
+
+            # 3. Prune old/dangling docker build cache to prevent disk from filling up
+            echo "🧹 Cleaning up old Docker images..."
+            docker image prune -f
+
+            echo "✅ Dashboard deployment completed successfully! Dashboard is live."

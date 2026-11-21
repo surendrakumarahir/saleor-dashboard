@@ -5,9 +5,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        API_URL: https://api.easytopick.in/graphql/
-        APP_MOUNT_URI: /
-        STATIC_URL: /
+        API_URL: ${API_URL:-https://api.easytopick.in/graphql/}
+        APP_MOUNT_URI: ${APP_MOUNT_URI:-/}
+        STATIC_URL: ${STATIC_URL:-/}
     restart: always
     expose:
       - "80"
