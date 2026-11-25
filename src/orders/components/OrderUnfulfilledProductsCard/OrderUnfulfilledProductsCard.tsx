@@ -2,7 +2,7 @@ import { DashboardCard } from "@dashboard/components/Card";
 import { type OrderLineFragment } from "@dashboard/graphql";
 import { commonMessages } from "@dashboard/intl";
 import { Box, Button } from "@saleor/macaw-ui-next";
-import { PackageIcon } from "lucide-react";
+import { PackageIcon, TruckIcon } from "lucide-react";
 import { FormattedMessage, useIntl } from "react-intl";
 
 import { OrderCardTitle } from "../OrderCardTitle/OrderCardTitle";
@@ -15,6 +15,7 @@ interface OrderUnfulfilledProductsCardProps {
   notAllowedToFulfillUnpaid: boolean;
   lines: OrderLineFragment[];
   onFulfill: () => void;
+  onCreateEkartParcel?: () => void;
   loading: boolean;
   onOrderLineShowMetadata: (id: string) => void;
 }
@@ -25,6 +26,7 @@ const OrderUnfulfilledProductsCard = ({
   onOrderLineShowMetadata,
   lines,
   onFulfill,
+  onCreateEkartParcel,
   loading,
 }: OrderUnfulfilledProductsCardProps) => {
   const classes = useStyles();
@@ -42,7 +44,18 @@ const OrderUnfulfilledProductsCard = ({
           className={classes.cardTitle}
           toolbar={
             showFulfillmentAction && (
-              <Box>
+              <Box display="flex" gap={2} flexWrap="wrap">
+                {onCreateEkartParcel && (
+                  <Button
+                    data-test-id="create-ekart-parcel-button"
+                    variant="secondary"
+                    onClick={onCreateEkartParcel}
+                    disabled={loading}
+                  >
+                    <TruckIcon size={16} />
+                    <span>Create Ekart Parcel</span>
+                  </Button>
+                )}
                 <Button
                   data-test-id="fulfill-button"
                   variant="primary"

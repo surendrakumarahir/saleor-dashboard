@@ -1,11 +1,12 @@
 // @ts-strict-ignore
 import { DashboardCard } from "@dashboard/components/Card";
 import { iconSize, iconStrokeWidth } from "@dashboard/components/icons";
+import { getEkartInfoFromFulfillment } from "@dashboard/ekart/utils";
 import { FulfillmentStatus, type OrderDetailsFragment } from "@dashboard/graphql";
 import { orderHasTransactions } from "@dashboard/orders/types";
 import { mergeRepeatedOrderLines } from "@dashboard/orders/utils/data";
 import { Box, Button, Dropdown, List, Text, useTheme } from "@saleor/macaw-ui-next";
-import { Code, EllipsisVertical } from "lucide-react";
+import { Code, EllipsisVertical, ExternalLink } from "lucide-react";
 
 import { OrderCardTitle } from "../OrderCardTitle/OrderCardTitle";
 import { OrderDetailsDatagrid } from "../OrderDetailsDatagrid/OrderDetailsDatagrid";
@@ -21,6 +22,10 @@ interface OrderFulfillmentCardProps {
   dataTestId?: string;
   onOrderLineShowMetadata: (id: string) => void;
   onFulfillmentShowMetadata?: () => void;
+  onCreateEkartParcel?: () => void;
+  onPrintEkartLabel?: (trackingId: string) => void;
+  onCancelEkartParcel?: (trackingId: string) => void;
+  ekartLabelLoading?: boolean;
 }
 
 const statusesToMergeLines = [
@@ -50,6 +55,10 @@ export const OrderFulfillmentCard = (props: OrderFulfillmentCardProps) => {
     onTrackingCodeAdd,
     onOrderLineShowMetadata,
     onFulfillmentShowMetadata,
+    onCreateEkartParcel,
+    onPrintEkartLabel,
+    onCancelEkartParcel,
+    ekartLabelLoading,
     dataTestId,
   } = props;
   const { themeValues } = useTheme();
@@ -57,6 +66,8 @@ export const OrderFulfillmentCard = (props: OrderFulfillmentCardProps) => {
   if (!fulfillment) {
     return null;
   }
+
+  const ekartInfo = getEkartInfoFromFulfillment(fulfillment);
 
   const getLines = () => {
     if (statusesToMergeLines.includes(fulfillment?.status)) {
@@ -96,6 +107,14 @@ export const OrderFulfillmentCard = (props: OrderFulfillmentCardProps) => {
               onTrackingCodeAdd={onTrackingCodeAdd}
               onApprove={onOrderFulfillmentApprove}
               hasTransactions={orderHasTransactions(order)}
+              isEkartActive={ekartInfo.isActive}
+              ekartLabelLoading={ekartLabelLoading}
+              onCreateEkartParcel={onCreateEkartParcel}
+              onPrintEkartLabel={
+                ekartInfo.isActive && onPrintEkartLabel
+                  ? () => onPrintEkartLabel(ekartInfo.trackingId)
+                  : undefined
+              }
             />
             {cancelableStatuses.includes(fulfillment?.status) && (
               <Dropdown>
@@ -116,6 +135,37 @@ export const OrderFulfillmentCard = (props: OrderFulfillmentCardProps) => {
                     boxShadow="defaultOverlay"
                     backgroundColor="default1"
                   >
+                    {ekartInfo.isActive && (
+                      <>
+                        <Dropdown.Item>
+                          <List.Item
+                            borderRadius={4}
+                            paddingX={1.5}
+                            paddingY={2}
+                            onClick={() => window.open(ekartInfo.trackingUrl, "_blank", "noopener")}
+                            data-test-id="track-ekart-parcel"
+                          >
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                              <ExternalLink size={14} />
+                              <Text>Track on Ekart</Text>
+                            </Box>
+                          </List.Item>
+                        </Dropdown.Item>
+                        {onCancelEkartParcel && (
+                          <Dropdown.Item>
+                            <List.Item
+                              borderRadius={4}
+                              paddingX={1.5}
+                              paddingY={2}
+                              onClick={() => onCancelEkartParcel(ekartInfo.trackingId)}
+                              data-test-id="cancel-ekart-parcel"
+                            >
+                              <Text color="critical1">Cancel Ekart Parcel</Text>
+                            </List.Item>
+                          </Dropdown.Item>
+                        )}
+                      </>
+                    )}
                     <Dropdown.Item>
                       <List.Item
                         borderRadius={4}
@@ -134,6 +184,47 @@ export const OrderFulfillmentCard = (props: OrderFulfillmentCardProps) => {
           </Box>
         }
       />
+      {ekartInfo.isEkart && (
+        <Box
+          paddingX={6}
+          paddingY={2}
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          gap={2}
+          backgroundColor="default1"
+          borderTopWidth={1}
+          borderTopStyle="solid"
+          borderColor="default1"
+        >
+          <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+            <Text size={2} fontWeight="bold">
+              Ekart ({ekartInfo.status === "CANCELLED" ? "Cancelled" : "Active"})
+            </Text>
+            <Text size={2} color="default2">
+              AWB: {ekartInfo.trackingId}
+              {ekartInfo.paymentMode
+                ? ` • ${ekartInfo.paymentMode}${ekartInfo.paymentMode === "COD" && ekartInfo.codAmount ? ` (₹${ekartInfo.codAmount})` : ""}`
+                : ""}
+              {ekartInfo.service ? ` • ${ekartInfo.service}` : ""}
+              {ekartInfo.weightGrams ? ` • ${ekartInfo.weightGrams}g` : ""}
+              {ekartInfo.dimensionsCm ? ` • ${ekartInfo.dimensionsCm} cm` : ""}
+            </Text>
+          </Box>
+          {ekartInfo.trackingUrl && (
+            <a
+              href={ekartInfo.trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: "12px", display: "inline-flex", alignItems: "center", gap: 4 }}
+            >
+              <span>Track Shipment</span>
+              <ExternalLink size={12} />
+            </a>
+          )}
+        </Box>
+      )}
       <DashboardCard.Content paddingX={0}>
         <OrderDetailsDatagrid
           lines={getLines()}

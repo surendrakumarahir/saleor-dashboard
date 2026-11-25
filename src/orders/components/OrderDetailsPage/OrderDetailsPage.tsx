@@ -93,6 +93,10 @@ interface OrderDetailsPageProps {
   onInvoiceGenerate: () => any;
   onInvoiceSend: (invoiceId: string) => any;
   onInvoicePrint?: () => any;
+  onCreateEkartParcel?: (fulfillmentId?: string) => void;
+  onPrintEkartLabel?: (trackingId: string) => void;
+  onCancelEkartParcel?: (fulfillmentId: string, trackingId: string) => void;
+  ekartLabelLoadingTrackingId?: string | null;
   onTransactionAction: (transactionId: string, actionType: TransactionActionEnum) => any;
   onAddManualTransaction: () => any;
   onRefundAdd: () => void;
@@ -124,6 +128,10 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
     onInvoiceGenerate,
     onInvoiceSend,
     onInvoicePrint,
+    onCreateEkartParcel,
+    onPrintEkartLabel,
+    onCancelEkartParcel,
+    ekartLabelLoadingTrackingId,
     onOrderReturn,
     onOrderLineAdd,
     onOrderLineChange,
@@ -241,6 +249,9 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
                   notAllowedToFulfillUnpaid={notAllowedToFulfillUnpaid}
                   lines={unfulfilled}
                   onFulfill={onOrderFulfill}
+                  onCreateEkartParcel={
+                    onCreateEkartParcel ? () => onCreateEkartParcel() : undefined
+                  }
                   loading={loading}
                   onOrderLineShowMetadata={onOrderLineShowMetadata}
                 />
@@ -270,6 +281,21 @@ const OrderDetailsPage = (props: OrderDetailsPageProps) => {
                   onOrderFulfillmentCancel={() => onFulfillmentCancel(fulfillment.id)}
                   onTrackingCodeAdd={() => onFulfillmentTrackingNumberUpdate(fulfillment.id)}
                   onOrderFulfillmentApprove={() => onFulfillmentApprove(fulfillment.id)}
+                  onCreateEkartParcel={
+                    onCreateEkartParcel && canFulfill
+                      ? () => onCreateEkartParcel(fulfillment.id)
+                      : undefined
+                  }
+                  onPrintEkartLabel={onPrintEkartLabel}
+                  onCancelEkartParcel={
+                    onCancelEkartParcel
+                      ? trackingId => onCancelEkartParcel(fulfillment.id, trackingId)
+                      : undefined
+                  }
+                  ekartLabelLoading={Boolean(
+                    ekartLabelLoadingTrackingId &&
+                      fulfillment.trackingNumber === ekartLabelLoadingTrackingId,
+                  )}
                 />
               ))}
 

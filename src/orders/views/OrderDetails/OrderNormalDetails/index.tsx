@@ -1,11 +1,17 @@
 // @ts-strict-ignore
-import { type FetchResult } from "@apollo/client";
+import { type FetchResult, useApolloClient, useMutation } from "@apollo/client";
 import { WindowTitle } from "@dashboard/components/WindowTitle";
+import {
+  EKART_CANCEL_SHIPMENT_MUTATION,
+  EKART_DOWNLOAD_LABEL_MUTATION,
+} from "@dashboard/ekart/queries";
+import { openBase64Pdf } from "@dashboard/ekart/utils";
 import {
   type CreateManualTransactionCaptureMutation,
   type CreateManualTransactionCaptureMutationVariables,
   type FulfillmentFragment,
   FulfillmentStatus,
+  OrderDetailsWithMetadataDocument,
   type OrderDetailsWithMetadataQueryResult,
   type OrderFulfillmentApproveMutation,
   type OrderFulfillmentApproveMutationVariables,
@@ -20,6 +26,7 @@ import {
   useWarehouseListQuery,
 } from "@dashboard/graphql";
 import useNavigator from "@dashboard/hooks/useNavigator";
+import { useNotifier } from "@dashboard/hooks/useNotifier";
 import {
   extractMutationErrors,
   getById,
@@ -53,6 +60,8 @@ import { useIntl } from "react-intl";
 import { customerUrl } from "../../../../customers/urls";
 import { productUrl } from "../../../../products/urls";
 import { EasyToPickInvoiceModal } from "../../../components/EasyToPickInvoice/EasyToPickInvoiceModal";
+import { EkartCancelDialog } from "../../../components/EkartShipmentModal/EkartCancelDialog";
+import { EkartShipmentModal } from "../../../components/EkartShipmentModal/EkartShipmentModal";
 import OrderAddressFields from "../../../components/OrderAddressFields/OrderAddressFields";
 import OrderCancelDialog from "../../../components/OrderCancelDialog";
 import { OrderCaptureDialog } from "../../../components/OrderCaptureDialog/OrderCaptureDialog";
@@ -163,12 +172,110 @@ export const OrderNormalDetails = ({
       input: data,
     });
   const intl = useIntl();
+  const notify = useNotifier();
+  const apolloClient = useApolloClient();
   const [invoiceModalState, setInvoiceModalState] = useState<{
     open: boolean;
     invoiceId?: string;
   }>({
     open: false,
   });
+  const [ekartModalState, setEkartModalState] = useState<{
+    open: boolean;
+    fulfillmentId?: string;
+  }>({
+    open: false,
+  });
+  const [ekartCancelState, setEkartCancelState] = useState<{
+    open: boolean;
+    fulfillmentId?: string;
+    trackingId?: string;
+    error?: string;
+  }>({
+    open: false,
+  });
+  const [ekartLabelLoadingTrackingId, setEkartLabelLoadingTrackingId] = useState<string | null>(
+    null,
+  );
+
+  const [downloadEkartLabel] = useMutation(EKART_DOWNLOAD_LABEL_MUTATION);
+  const [cancelEkartShipment, { loading: cancelingEkart }] = useMutation(
+    EKART_CANCEL_SHIPMENT_MUTATION,
+  );
+
+  const refetchOrder = async () => {
+    await apolloClient.refetchQueries({
+      include: [OrderDetailsWithMetadataDocument],
+    });
+  };
+
+  const handlePrintEkartLabel = async (trackingId: string) => {
+    setEkartLabelLoadingTrackingId(trackingId);
+
+    try {
+      const { data: labelRes } = await downloadEkartLabel({
+        variables: { trackingId },
+      });
+      const res = labelRes?.ekartDownloadLabel;
+
+      if (res?.errors?.length) {
+        notify({
+          status: "error",
+          text: res.errors.map((e: any) => e.message).join(" "),
+        });
+
+        return;
+      }
+
+      if (res?.label?.pdfBase64) {
+        openBase64Pdf(res.label.pdfBase64, res.label.filename);
+      }
+    } catch (err: any) {
+      notify({
+        status: "error",
+        text: err?.message || "Failed to load Ekart label.",
+      });
+    } finally {
+      setEkartLabelLoadingTrackingId(null);
+    }
+  };
+
+  const handleConfirmCancelEkart = async (cancelSaleorFulfillment: boolean) => {
+    if (!ekartCancelState.fulfillmentId) {
+      return;
+    }
+
+    try {
+      const { data: cancelRes } = await cancelEkartShipment({
+        variables: {
+          fulfillmentId: ekartCancelState.fulfillmentId,
+          cancelFulfillment: cancelSaleorFulfillment,
+        },
+      });
+      const res = cancelRes?.ekartCancelShipment;
+
+      if (res?.errors?.length) {
+        setEkartCancelState(prev => ({
+          ...prev,
+          error: res.errors.map((e: any) => e.message).join(" "),
+        }));
+
+        return;
+      }
+
+      notify({
+        status: "success",
+        text: `Ekart parcel ${res?.trackingId || ""} cancelled.`,
+      });
+      setEkartCancelState({ open: false });
+      await refetchOrder();
+    } catch (err: any) {
+      setEkartCancelState(prev => ({
+        ...prev,
+        error: err?.message || "Failed to cancel Ekart parcel.",
+      }));
+    }
+  };
   const [transactionReference, setTransactionReference] = useState("");
   const [currentApproval, setCurrentApproval] = useState<ApprovalState | null>(null);
   const [stockExceeded, setStockExceeded] = useState(false);
@@ -311,6 +418,22 @@ export const OrderNormalDetails = ({
             open: true,
           })
         }
+        onCreateEkartParcel={fulfillmentId =>
+          setEkartModalState({
+            open: true,
+            fulfillmentId,
+          })
+        }
+        onPrintEkartLabel={handlePrintEkartLabel}
+        onCancelEkartParcel={(fulfillmentId, trackingId) =>
+          setEkartCancelState({
+            open: true,
+            fulfillmentId,
+            trackingId,
+            error: undefined,
+          })
+        }
+        ekartLabelLoadingTrackingId={ekartLabelLoadingTrackingId}
         onInvoiceSend={id => openModal("invoice-send", { id })}
         onRefundAdd={() => openModal("add-refund")}
         onSubmit={handleSubmit}
@@ -545,6 +668,21 @@ export const OrderNormalDetails = ({
         onClose={() => setInvoiceModalState({ open: false })}
         order={order}
         selectedInvoiceId={invoiceModalState.invoiceId}
+      />
+      <EkartShipmentModal
+        open={ekartModalState.open}
+        onClose={() => setEkartModalState({ open: false })}
+        order={order}
+        fulfillmentId={ekartModalState.fulfillmentId}
+        onSuccess={refetchOrder}
+      />
+      <EkartCancelDialog
+        open={ekartCancelState.open}
+        trackingId={ekartCancelState.trackingId || ""}
+        loading={cancelingEkart}
+        error={ekartCancelState.error}
+        onClose={() => setEkartCancelState({ open: false })}
+        onConfirm={handleConfirmCancelEkart}
       />
     </>
   );

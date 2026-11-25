@@ -21,6 +21,9 @@ const config: CodegenConfig = {
     // reviews module uses custom types not in main schema
     "!./src/reviews/queries.ts",
     "!./src/reviews/**/*.ts",
+    // ekart module uses custom types not in main schema
+    "!./src/ekart/queries.ts",
+    "!./src/ekart/**/*.ts",
   ],
   generates: {
     "./src/graphql/fragmentTypes.generated.ts": {

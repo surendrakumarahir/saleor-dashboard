@@ -5,7 +5,7 @@ import { DEFAULT_ICON_SIZE } from "@dashboard/icons/utils";
 import { buttonMessages, commonMessages } from "@dashboard/intl";
 import { orderPaymentRefundUrl } from "@dashboard/orders/urls";
 import { Box, Button, Text } from "@saleor/macaw-ui-next";
-import { CheckIcon, TruckIcon } from "lucide-react";
+import { CheckIcon, PrinterIcon, TruckIcon } from "lucide-react";
 import { FormattedMessage } from "react-intl";
 
 import { RefundedIcon } from "../../../icons/RefundedIcon";
@@ -20,6 +20,10 @@ interface ActionButtonsProps {
   hasTransactions: boolean;
   onTrackingCodeAdd: () => any;
   onApprove: () => any;
+  isEkartActive?: boolean;
+  ekartLabelLoading?: boolean;
+  onCreateEkartParcel?: () => void;
+  onPrintEkartLabel?: () => void;
 }
 
 const statusesToShow = [
@@ -37,6 +41,10 @@ export const ActionButtons = ({
   hasTransactions,
   onTrackingCodeAdd,
   onApprove,
+  isEkartActive,
+  ekartLabelLoading,
+  onCreateEkartParcel,
+  onPrintEkartLabel,
 }: ActionButtonsProps) => {
   const navigate = useNavigator();
   const hasTrackingNumber = !!trackingNumber;
@@ -79,14 +87,39 @@ export const ActionButtons = ({
   }
 
   return hasTrackingNumber ? (
-    <Box>
-      <Button data-test-id="edit-tracking-button" variant="primary" onClick={onTrackingCodeAdd}>
+    <Box display="flex" gap={2} flexWrap="wrap">
+      {isEkartActive && onPrintEkartLabel && (
+        <Button
+          data-test-id="print-ekart-label-button"
+          variant="primary"
+          onClick={onPrintEkartLabel}
+          disabled={ekartLabelLoading}
+        >
+          <PrinterIcon size={DEFAULT_ICON_SIZE} />
+          <span>{ekartLabelLoading ? "Loading Label..." : "Print Ekart Label"}</span>
+        </Button>
+      )}
+      <Button
+        data-test-id="edit-tracking-button"
+        variant={isEkartActive ? "secondary" : "primary"}
+        onClick={onTrackingCodeAdd}
+      >
         <TruckIcon size={DEFAULT_ICON_SIZE} />
         <FormattedMessage {...actionButtonsMessages.editTracking} />
       </Button>
     </Box>
   ) : (
-    <Box>
+    <Box display="flex" gap={2} flexWrap="wrap">
+      {onCreateEkartParcel && (
+        <Button
+          data-test-id="create-ekart-parcel-fulfillment-button"
+          variant="secondary"
+          onClick={onCreateEkartParcel}
+        >
+          <TruckIcon size={DEFAULT_ICON_SIZE} />
+          <span>Create Ekart Parcel</span>
+        </Button>
+      )}
       <Button variant="primary" onClick={onTrackingCodeAdd} data-test-id="add-tracking-button">
         <TruckIcon size={DEFAULT_ICON_SIZE} />
         <FormattedMessage {...actionButtonsMessages.addTracking} />
